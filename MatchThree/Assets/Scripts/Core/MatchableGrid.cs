@@ -2,6 +2,7 @@ using UnityEngine;
 using Tools;
 using System;
 using System.Collections;
+using Unity.VisualScripting;
 
 namespace Core
 {
@@ -28,47 +29,70 @@ namespace Core
         {
             return;
         }
-        private bool AreTwoMatchables(Matchable matchable1, Matchable matchable2)
+        private bool AreTwoMatch(Matchable matchable1, Matchable matchable2)
         {
-            if (matchable1.Variant.color != MatchableColor.None && matchable2.Variant.color != MatchableColor.None)
-            {
+            //if (matchable1.Variant.color != MatchableColor.None && matchable2.Variant.color != MatchableColor.None)
+            //{
                 if (matchable1.Variant.color != matchable2.Variant.color)
                     return false;
-            }
+            //}
             return true;
         }
         private bool AreMatchables(params Matchable[] matchables)
         {
             for (int i = 0; i < matchables.Length - 1; i++)
             {
-                if (!AreTwoMatchables(matchables[i], matchables[i + 1]))
+                if (!AreTwoMatch(matchables[i], matchables[i + 1]))
                     return false;
             }
             return true;
         }
-        private bool TryMatchingAt(Matchable matchable, Vector2Int gridPos)
+        private bool IsPartOfAMatch(Matchable matchable)
         {
-            int x = gridPos.x;
-            int y = gridPos.y;
+            int verticalMatchSize = 0;
+            int horizontalMatchSize = 0;
+            
+            horizontalMatchSize += CountMatches(matchable, Vector2Int.left);
+            //Debug.Log("Left count: " + horizontalMatchSize);
+            horizontalMatchSize += CountMatches(matchable, Vector2Int.right);
+            //Debug.Log("Horizontal count: " + horizontalMatchSize);
 
-            if(y < Dimensions.y - 2)
-                if (AreMatchables(matchable, _data[x, y + 1], _data[x, y + 2]))
-                    return true;
-            if(y > 2)
-                if (AreMatchables(matchable, _data[x, y - 1], _data[x, y - 2]))
-                    return true;
-            if(x < Dimensions.x - 2)
-                if (AreMatchables(matchable, _data[x + 1, y], _data[x + 2, y]))
-                    return true;
-            if(x > 2)
-                if (AreMatchables(matchable, _data[x - 1, y], _data[x - 2, y]))
-                    return true;
+            verticalMatchSize += CountMatches(matchable, Vector2Int.up);
+            //Debug.Log("Up count: " + verticalMatchSize);
+            verticalMatchSize += CountMatches(matchable, Vector2Int.down);
+            //Debug.Log("Vertical count: " + verticalMatchSize);
 
+            if(verticalMatchSize >= 2 || horizontalMatchSize >= 2)
+                return true;
             return false;
         }
-        private bool TryMatching(Matchable matchable)
+        //Origin match exclusive
+        //TODO: Check if matchable is moving or not
+        private int CountMatches(Matchable matchable, Vector2Int direction)
         {
-            return false;
+            int counter = 0;
+            Vector2Int pos = matchable.GridPosition + direction;
+            while (CheckBounds(pos) && !IsEmpty(pos))
+            {
+                Matchable nextMatchable = GetItemAt(pos);
+                if(AreTwoMatch(matchable, nextMatchable) && !nextMatchable.IsMoving)
+                {
+                    counter++;
+                    pos += direction;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return counter;
+        }
+        private void SwapMatchables(Matchable matchable1, Matchable matchable2)
+        {
+            SwapItems(matchable1.GridPosition, matchable2.GridPosition);
+            Vector2Int temp = matchable1.GridPosition;
+            matchable1.GridPosition = matchable2.GridPosition;
+            matchable2.GridPosition = temp;
         }
         private IEnumerator SwapAnim(Matchable matchable1, Matchable matchable2)
         {
@@ -89,7 +113,7 @@ namespace Core
                     matchable.GridPosition = new Vector2Int(x, y);
                     matchable.gameObject.SetActive(true);
 
-                    if (!allowMatches && IsPartOfAMatchAt(matchable))
+                    if (!allowMatches && IsPartOfAMatch(matchable))
                     {
                         MakeMatchableUnfit(matchable);
                     }
@@ -119,18 +143,17 @@ namespace Core
         }
         public IEnumerator TrySwap(Matchable matchable1, Matchable matchable2)
         {
+            matchable1.isSwapping = matchable2.isSwapping = true;
             yield return SwapAnim(matchable1, matchable2);
 
-            if(!TryMatchingAt(matchable1, matchable2.GridPosition) && !TryMatchingAt(matchable2, matchable1.GridPosition))
+            SwapMatchables(matchable1, matchable2);
+
+            if(!IsPartOfAMatch(matchable1)  && !IsPartOfAMatch(matchable2))
             {
+                SwapMatchables(matchable1, matchable2);
                 yield return SwapAnim(matchable1, matchable2);
             }
-            else
-            {
-                Debug.Log("Part Of A Match!");
-            }
-           
-
+            matchable1.isSwapping = matchable2.isSwapping = false;
         }
         public override void ClearGrid()
         {
@@ -138,7 +161,7 @@ namespace Core
             {
                 for (int x = 0; x < Dimensions.x - 1; x++)
                 {
-                    _pool.ReturnObject(_data[x, y]);
+                    _pool.ReturnObject(GetItemAt(x, y));
                 }
             }
             base.ClearGrid();

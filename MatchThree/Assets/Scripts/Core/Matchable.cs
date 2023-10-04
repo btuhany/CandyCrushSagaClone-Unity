@@ -11,7 +11,7 @@ public class Matchable : Movable
     private readonly Color _selectedColor = Color.HSVToRGB(0f, 0f, 0.7f);
     public MatchableVariant Variant { get => _variant; }
     public Vector2Int GridPosition { get => _gridPosition; set => _gridPosition = value; }
-
+    public bool isSwapping;
     private void Awake()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();

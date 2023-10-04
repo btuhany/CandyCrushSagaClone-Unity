@@ -1,8 +1,6 @@
 using Core;
-using Tools;
 using UnityEngine;
 using UnityEngine.InputSystem;
-
 
 public class InputReader : MonoBehaviour, InputActions.ITouchscreenActions
 {
@@ -67,7 +65,7 @@ public class InputReader : MonoBehaviour, InputActions.ITouchscreenActions
         if(_selectedMatchables[0] != null && _selectedMatchables[1] != null)
             if (_grid.AreAdjacents(_selectedMatchables[0], _selectedMatchables[1]))
             {
-                Debug.Log("First: " + _selectedMatchables[0].GridPosition + "Second: " + _selectedMatchables[1].GridPosition);
+                //Debug.Log("First: " + _selectedMatchables[0].GridPosition + "Second: " + _selectedMatchables[1].GridPosition);
                 StartCoroutine(_grid.TrySwap(_selectedMatchables[0], _selectedMatchables[1]));
             }
 

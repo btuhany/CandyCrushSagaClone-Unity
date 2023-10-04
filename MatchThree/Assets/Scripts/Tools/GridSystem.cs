@@ -6,7 +6,7 @@ namespace Tools
 {
     public abstract class GridSystem<T> : SingletonMonoBehaviour<GridSystem<T>>
     {
-        protected T[,] _data;
+        private T[,] _data;
         private Vector2Int _dimensions = new Vector2Int(1, 1);
         private bool _isReady;
         public Vector2Int Dimensions { get => _dimensions; }
@@ -94,7 +94,7 @@ namespace Tools
         {
             return RemoveItemAt(posiiton.x, posiiton.y);
         }
-        public void SwapItems(int x1, int y1, int x2, int y2)
+        protected void SwapItems(int x1, int y1, int x2, int y2)
         {
             if (!CheckBounds(x1, y1))
                 Debug.LogError($"({x1},{y1}) are not on the grid.");
@@ -105,7 +105,7 @@ namespace Tools
             _data[x1, y1] = _data[x2, y2];
             _data[x2, y2] = item1;
         }
-        public void SwapItems(Vector2Int position1, Vector2Int position2)
+        protected void SwapItems(Vector2Int position1, Vector2Int position2)
         {
             SwapItems(position1.x, position1.y, position2.x, position2.y);
         }
