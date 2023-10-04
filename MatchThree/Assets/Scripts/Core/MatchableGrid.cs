@@ -3,6 +3,7 @@ using Tools;
 using System;
 using System.Collections;
 using Unity.VisualScripting;
+using System.Collections.Generic;
 
 namespace Core
 {
@@ -49,34 +50,67 @@ namespace Core
         }
         private bool IsPartOfAMatch(Matchable matchable)
         {
-            int verticalMatchSize = 0;
-            int horizontalMatchSize = 0;
-            
-            horizontalMatchSize += CountMatches(matchable, Vector2Int.left);
-            //Debug.Log("Left count: " + horizontalMatchSize);
-            horizontalMatchSize += CountMatches(matchable, Vector2Int.right);
-            //Debug.Log("Horizontal count: " + horizontalMatchSize);
+            Match matchOnLeft = GetMatchesInDirection(matchable, Vector2Int.left);
+            Match matchOnRight = GetMatchesInDirection(matchable, Vector2Int.right);
+            Match matchOnUp = GetMatchesInDirection(matchable, Vector2Int.up);
+            Match matchDown = GetMatchesInDirection(matchable, Vector2Int.down);
 
-            verticalMatchSize += CountMatches(matchable, Vector2Int.up);
-            //Debug.Log("Up count: " + verticalMatchSize);
-            verticalMatchSize += CountMatches(matchable, Vector2Int.down);
-            //Debug.Log("Vertical count: " + verticalMatchSize);
+            Match horizontalMatch = matchOnLeft.Merge(matchOnRight);
+            Match verticalMatch = matchOnUp.Merge(matchDown);
 
-            if(verticalMatchSize >= 2 || horizontalMatchSize >= 2)
+            if (horizontalMatch.Collectable || verticalMatch.Collectable)
                 return true;
             return false;
         }
-        //Origin match exclusive
-        //TODO: Check if matchable is moving or not
-        private int CountMatches(Matchable matchable, Vector2Int direction)
+        private bool IsPartOfAMatch(Matchable matchable, out Match matchGroup)
         {
+            Match matchOnLeft = GetMatchesInDirection(matchable, Vector2Int.left);
+            Debug.Log("matchOnLeft: " + matchOnLeft);
+            Match matchOnRight = GetMatchesInDirection(matchable, Vector2Int.right);
+            Debug.Log("matchOnRight: " + matchOnRight);
+            Match matchOnUp = GetMatchesInDirection(matchable, Vector2Int.up);
+            Debug.Log("matchOnUp: " + matchOnUp);
+            Match matchDown = GetMatchesInDirection(matchable, Vector2Int.down);
+            Debug.Log("matchOnDown: " + matchDown);
+
+            Match horizontalMatch = matchOnLeft.Merge(matchOnRight);
+            Debug.Log("horizontalMatch: " + horizontalMatch);
+            Match verticalMatch = matchOnUp.Merge(matchDown);
+            Debug.Log("verticalMatch: " + verticalMatch);
+
+            
+            if(horizontalMatch.Collectable)
+            {
+                matchGroup = horizontalMatch;
+                if(verticalMatch.Collectable)
+                {
+                    matchGroup.Merge(verticalMatch);
+                }
+                return true;
+            }
+            else if(verticalMatch.Collectable)
+            {
+                matchGroup = verticalMatch;
+                return true;
+            }
+            else
+            {
+                matchGroup = null;
+                return false;
+            }
+        }
+        //Origin match exclusive
+        private Match GetMatchesInDirection(Matchable matchable, Vector2Int direction)
+        {
+            Match match = new Match();
             int counter = 0;
             Vector2Int pos = matchable.GridPosition + direction;
             while (CheckBounds(pos) && !IsEmpty(pos))
             {
-                Matchable nextMatchable = GetItemAt(pos);
-                if(AreTwoMatch(matchable, nextMatchable) && !nextMatchable.IsMoving)
+                Matchable otherMatchable = GetItemAt(pos);
+                if(AreTwoMatch(matchable, otherMatchable)) //&& !otherMatchable.IsMoving && !otherMatchable.isSwapping)
                 {
+                    match.AddMatchable(otherMatchable);
                     counter++;
                     pos += direction;
                 }
@@ -85,7 +119,7 @@ namespace Core
                     break;
                 }
             }
-            return counter;
+            return match;
         }
         private void SwapMatchables(Matchable matchable1, Matchable matchable2)
         {
@@ -141,17 +175,21 @@ namespace Core
 
             return false;
         }
-        public IEnumerator TrySwap(Matchable matchable1, Matchable matchable2)
+        public IEnumerator TryMatch(Matchable matchable1, Matchable matchable2)
         {
             matchable1.isSwapping = matchable2.isSwapping = true;
             yield return SwapAnim(matchable1, matchable2);
 
             SwapMatchables(matchable1, matchable2);
 
-            if(!IsPartOfAMatch(matchable1)  && !IsPartOfAMatch(matchable2))
+            if(!IsPartOfAMatch(matchable1, out Match match1))  //&& !IsPartOfAMatch(matchable2, out match2))
             {
                 SwapMatchables(matchable1, matchable2);
                 yield return SwapAnim(matchable1, matchable2);
+            }
+            else
+            {
+                //match1?.Resolve();
             }
             matchable1.isSwapping = matchable2.isSwapping = false;
         }

@@ -66,7 +66,7 @@ public class InputReader : MonoBehaviour, InputActions.ITouchscreenActions
             if (_grid.AreAdjacents(_selectedMatchables[0], _selectedMatchables[1]))
             {
                 //Debug.Log("First: " + _selectedMatchables[0].GridPosition + "Second: " + _selectedMatchables[1].GridPosition);
-                StartCoroutine(_grid.TrySwap(_selectedMatchables[0], _selectedMatchables[1]));
+                StartCoroutine(_grid.TryMatch(_selectedMatchables[0], _selectedMatchables[1]));
             }
 
         

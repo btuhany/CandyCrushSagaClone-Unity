@@ -9,6 +9,12 @@ namespace Core
     {
         [SerializeField] private Vector2Int _dimensions;
         private MatchableGrid _grid;
+        [ContextMenu("ClearAndPopulate")]
+        private void ClearAndPopulate()
+        {
+            _grid.ClearGrid();
+            _grid.PopulateGrid();
+        }
         [ContextMenu("Populate")]
         private void Populate()
         {
