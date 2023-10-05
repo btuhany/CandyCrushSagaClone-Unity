@@ -55,8 +55,8 @@ namespace Core
             Match matchOnUp = GetMatchesInDirection(matchable, Vector2Int.up);
             Match matchDown = GetMatchesInDirection(matchable, Vector2Int.down);
 
-            Match horizontalMatch = matchOnLeft.Merge(matchOnRight);
-            Match verticalMatch = matchOnUp.Merge(matchDown);
+            Match horizontalMatch = matchOnLeft.Merge(matchOnRight, true);
+            Match verticalMatch = matchOnUp.Merge(matchDown, true);
 
             if (horizontalMatch.Collectable || verticalMatch.Collectable)
                 return true;
@@ -65,18 +65,22 @@ namespace Core
         private bool IsPartOfAMatch(Matchable matchable, out Match matchGroup)
         {
             Match matchOnLeft = GetMatchesInDirection(matchable, Vector2Int.left);
-            Debug.Log("matchOnLeft: " + matchOnLeft);
+            //Debug.Log("matchOnLeft: " + matchOnLeft);
             Match matchOnRight = GetMatchesInDirection(matchable, Vector2Int.right);
-            Debug.Log("matchOnRight: " + matchOnRight);
+            //Debug.Log("matchOnRight: " + matchOnRight);
             Match matchOnUp = GetMatchesInDirection(matchable, Vector2Int.up);
-            Debug.Log("matchOnUp: " + matchOnUp);
+            //Debug.Log("matchOnUp: " + matchOnUp);
             Match matchDown = GetMatchesInDirection(matchable, Vector2Int.down);
-            Debug.Log("matchOnDown: " + matchDown);
+            //Debug.Log("matchOnDown: " + matchDown);
 
             Match horizontalMatch = matchOnLeft.Merge(matchOnRight);
-            Debug.Log("horizontalMatch: " + horizontalMatch);
+            horizontalMatch.AddMatchable(matchable);
+            horizontalMatch.OriginExclusive = false;
+            //Debug.Log("horizontalMatch: " + horizontalMatch);
             Match verticalMatch = matchOnUp.Merge(matchDown);
-            Debug.Log("verticalMatch: " + verticalMatch);
+            verticalMatch.AddMatchable(matchable);
+            verticalMatch.OriginExclusive = false;
+            //Debug.Log("verticalMatch: " + verticalMatch);
 
             
             if(horizontalMatch.Collectable)
@@ -100,9 +104,14 @@ namespace Core
             }
         }
         //Origin match exclusive
-        private Match GetMatchesInDirection(Matchable matchable, Vector2Int direction)
+        private Match GetMatchesInDirection(Matchable matchable, Vector2Int direction, bool originExclusive = true)
         {
-            Match match = new Match();
+            Match match;
+            if (originExclusive)
+                match = new Match();
+            else
+                match = new Match(matchable);
+
             int counter = 0;
             Vector2Int pos = matchable.GridPosition + direction;
             while (CheckBounds(pos) && !IsEmpty(pos))
@@ -147,10 +156,11 @@ namespace Core
                     matchable.GridPosition = new Vector2Int(x, y);
                     matchable.gameObject.SetActive(true);
 
-                    if (!allowMatches && IsPartOfAMatch(matchable))
-                    {
-                        MakeMatchableUnfit(matchable);
-                    }
+                    //TODO: prevent maches
+                    //if (!allowMatches && IsPartOfAMatch(matchable))
+                    //{
+                    //    MakeMatchableUnfit(matchable);
+                    //}
                 }
             }
         }
@@ -177,19 +187,27 @@ namespace Core
         }
         public IEnumerator TryMatch(Matchable matchable1, Matchable matchable2)
         {
+            //TODO: isswapping ismoving check
             matchable1.isSwapping = matchable2.isSwapping = true;
             yield return SwapAnim(matchable1, matchable2);
 
             SwapMatchables(matchable1, matchable2);
 
-            if(!IsPartOfAMatch(matchable1, out Match match1))  //&& !IsPartOfAMatch(matchable2, out match2))
+            bool swapBack = true;
+            if(IsPartOfAMatch(matchable1, out Match match1))
+            {
+                match1?.Resolve();
+                swapBack = false;
+            }
+            if(IsPartOfAMatch(matchable2, out Match match2))
+            {
+                match2?.Resolve();
+                swapBack = false;
+            }
+            if(swapBack)
             {
                 SwapMatchables(matchable1, matchable2);
                 yield return SwapAnim(matchable1, matchable2);
-            }
-            else
-            {
-                //match1?.Resolve();
             }
             matchable1.isSwapping = matchable2.isSwapping = false;
         }

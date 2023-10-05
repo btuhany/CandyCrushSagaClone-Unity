@@ -7,7 +7,10 @@ public class Match
 	private List<Matchable> _matchableList;
 	public int Count => _matchableList.Count;
 	public bool Collectable => _originExclusive ? Count >= _minMatch - 1 : Count >= _minMatch;
-	private  const int _minMatch = 3;
+
+    public bool OriginExclusive { get => _originExclusive; set => _originExclusive = value; }
+
+    private  const int _minMatch = 3;
 	private bool _originExclusive;
 	public Match()
 	{
@@ -24,8 +27,27 @@ public class Match
 	{
 		_matchableList.Add(matchable);
 	}
-	public Match Merge(Match matchToMerge)
+	public Match Merge(Match matchToMerge, bool checkIsAlreadyInList = false)
 	{
+		if(checkIsAlreadyInList)
+		{
+			List<Matchable> matchListToMerge = matchToMerge._matchableList;
+			List<Matchable> matchablesToRemove = new List<Matchable>();
+			for (int i = 0; i < matchListToMerge.Count; i++)
+			{
+				for (int j = 0; j < _matchableList.Count; j++)
+				{
+					if (_matchableList[j] == matchListToMerge[i])
+					{
+                        matchablesToRemove.Add(matchListToMerge[i]);
+					}
+				}
+			}
+			for (int i = 0; i < matchablesToRemove.Count; i++)
+			{
+				matchListToMerge.Remove(matchablesToRemove[i]);
+			}
+        }
 		this._matchableList.AddRange(matchToMerge._matchableList);
 		return this;
 	}
