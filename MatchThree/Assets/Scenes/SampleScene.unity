@@ -978,12 +978,28 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 388838046}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
+      propertyPath: _scanDelay
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _spacing.x
       value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _spacing.y
       value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
+      propertyPath: _collapseSpeedFactor
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
+      propertyPath: _matchableSpawnSpeed
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
+      propertyPath: _matchableSpawnSpeedFactor
+      value: 4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}

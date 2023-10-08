@@ -250,7 +250,7 @@ namespace Core
             {
                 for (int y = 0; y < Dimensions.y; y++)
                 {
-                    if(!IsEmpty(x, y) && !GetItemAt(x, y).isSwapping)
+                    if(!IsEmpty(x, y) && !GetItemAt(x, y).isSwapping && !GetItemAt(x, y).IsMoving)
                     {
                         if(IsPartOfAMatch(GetItemAt(x, y), out Match match))
                         {
