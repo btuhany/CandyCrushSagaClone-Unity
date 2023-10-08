@@ -2,26 +2,33 @@ using UnityEngine;
 using Tools;
 using System.Collections;
 using TMPro;
+using System.Collections.Generic;
 
 namespace Core
 {
     public class MatchableGrid : GridSystem<Matchable>
     {
+        [SerializeField] private float _matchableSpawnSpeedFactor = 1f;
+        [SerializeField] private float _collapseSpeedFactor = 1f;
+        [SerializeField] private float _scanDelay = 0.5f;
         [SerializeField] private TextMeshProUGUI _debugText;
         [Header("Grid Config")]
         [SerializeField] private Vector2 _spacing;
         private Transform _transform;
         private MatchablePool _pool;
         private Movable _move;
+        private WaitForSeconds _scanWaitDelay;
         protected override void Awake()
         {
             base.Awake();
             _transform = GetComponent<Transform>();
             _pool = (MatchablePool)MatchablePool.Instance;
             _move = GetComponent<Movable>();
+            _scanWaitDelay = new WaitForSeconds(_scanDelay);
         }
         private void Start()
         {
+
             StartCoroutine(_move.MoveToPosition(_transform.position)); //from offset
         }
      
@@ -147,9 +154,9 @@ namespace Core
                     {
                         for (int yEmptyIndex = y + 1; yEmptyIndex < Dimensions.y; yEmptyIndex++)
                         {
-                            if(!IsEmpty(x, yEmptyIndex) && !GetItemAt(x, yEmptyIndex).isSwapping && !GetItemAt(x, yEmptyIndex).IsMoving)
+                            if(!IsEmpty(x, yEmptyIndex))// && !GetItemAt(x, yEmptyIndex).isSwapping && !GetItemAt(x, yEmptyIndex).IsMoving)
                             {
-                               MoveMatchableTo(GetItemAt(x, yEmptyIndex), x, y);
+                               MoveMatchable(GetItemAt(x, yEmptyIndex), x, y, (yEmptyIndex - y) / _collapseSpeedFactor);
                                break; //??
                             }
                         }
@@ -161,19 +168,26 @@ namespace Core
         {
             matchable.transform.position = new Vector3(x * _spacing.x, y * _spacing.y);
         }
-        private void MoveMatchableTo(Matchable matchable, int posX, int posY)
+        private void MoveMatchable(Matchable matchable, int posX, int posY, float speed)
         {
             //RemoveItemAt(matchable.GridPosition);
             //PutItemAt(matchable, posX, posY);
             MoveItemTo(matchable.GridPosition.x, matchable.GridPosition.y, posX, posY);
             matchable.GridPosition = new Vector2Int(posX, posY);
-            SetMatchablePosition(matchable, posX, posY);
+            //SetMatchablePosition(matchable, posX, posY);
+            matchable.StartCoroutine(matchable.MoveToPosition(new Vector3(posX * _spacing.x, posY * _spacing.y, 0f), speed));
             //TODO: Anim
         }
         private IEnumerator SwapAnim(Matchable matchable1, Matchable matchable2)
         {
             StartCoroutine(matchable1.MoveToPosition(matchable2.transform.position));
             yield return StartCoroutine(matchable2.MoveToPosition(matchable1.transform.position));
+        }
+        private IEnumerator CollapseRepopulateAndScanTheGrid()
+        {
+            CollapseGrid();
+            yield return StartCoroutine(RepopulateGrid());
+            yield return StartCoroutine(ScanForMatches());
         }
         public void PopulateGrid(bool allowMatches = false)
         {
@@ -196,6 +210,58 @@ namespace Core
                     }
                 }
             }
+        }
+        public IEnumerator RepopulateGrid(bool allowMatches = false)
+        {
+            Coroutine currentCoroutine = null;
+            for (int x = 0; x < Dimensions.x; x++)
+            {
+                int positionOffset = 0;
+                List<Matchable> newMatchables = new List<Matchable>();
+                for (int y = 0; y < Dimensions.y; y++)
+                {
+                    if (CheckBounds(x, y) && !IsEmpty(x, y)) continue;
+                    Matchable matchable = _pool.GetRandomVariantMatchable(false);
+                    matchable.transform.parent = _transform;
+                    PutItemAt(matchable, x, y);
+                    matchable.SetColliderSize(_spacing);
+                    matchable.GridPosition = new Vector2Int(x, y);
+                    matchable.transform.position = _transform.position + new Vector3(matchable.GridPosition.x * _spacing.x, positionOffset * _spacing.y + Dimensions.y * _spacing.y, 0);
+                    matchable.gameObject.SetActive(true);
+                    newMatchables.Add(matchable);
+                    if (!allowMatches && IsPartOfAMatch(matchable))
+                    {
+                        MakeMatchableUnfit(matchable);
+                    }
+                    positionOffset++;
+                }
+                foreach (Matchable matchable in newMatchables)
+                {
+                    currentCoroutine = matchable.StartCoroutine(matchable.MoveToPosition(_transform.position + new Vector3(matchable.GridPosition.x * _spacing.x, matchable.GridPosition.y * _spacing.y), (positionOffset + Dimensions.y - matchable.GridPosition.y) / _matchableSpawnSpeedFactor));
+                }
+            }
+            yield return currentCoroutine;   
+        }
+        public IEnumerator ScanForMatches()
+        {
+            bool isResolved = false;
+            yield return _scanWaitDelay;
+            for (int x = 0; x < Dimensions.x; x++)
+            {
+                for (int y = 0; y < Dimensions.y; y++)
+                {
+                    if(!IsEmpty(x, y) && !GetItemAt(x, y).isSwapping)
+                    {
+                        if(IsPartOfAMatch(GetItemAt(x, y), out Match match))
+                        {
+                            match?.Resolve();
+                            isResolved = true;
+                        }
+                    }
+                }
+            }
+            if (isResolved)
+                StartCoroutine(CollapseRepopulateAndScanTheGrid());
         }
         public bool AreAdjacents(Matchable matchable1, Matchable matchable2)
         {
@@ -246,8 +312,7 @@ namespace Core
             }
             else
             {
-                CollapseGrid();
-                PopulateGrid();
+                StartCoroutine(CollapseRepopulateAndScanTheGrid());
                 //for (int i = 0; i < Dimensions.y; i++)
                 //{
                 //    for (int x = 0; x < Dimensions.x; x++)
@@ -263,9 +328,9 @@ namespace Core
         }
         public override void ClearGrid()
         {
-            for (int y = 0; y < Dimensions.y - 1; y++)
+            for (int y = 0; y < Dimensions.y; y++)
             {
-                for (int x = 0; x < Dimensions.x - 1; x++)
+                for (int x = 0; x < Dimensions.x; x++)
                 {
                     _pool.ReturnObject(GetItemAt(x, y));
                 }

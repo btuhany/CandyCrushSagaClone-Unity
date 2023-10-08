@@ -25,6 +25,23 @@ public class Movable : MonoBehaviour
         while (_howFar != 1f);
         _isMoving = false;
     }
+    public IEnumerator MoveToPosition(Vector3 targetPosition, float speed)
+    {
+        _howFar = 0f;
+        _to = targetPosition;
+        _from = transform.position + _startOffset;
+        _isMoving = true;
+        do
+        {
+            _howFar += Time.deltaTime * speed;
+            if (_howFar > 1f)
+                _howFar = 1f;
+            transform.position = Vector3.LerpUnclamped(_from, _to, EaseFunc(_howFar));
+            yield return null;
+        }
+        while (_howFar != 1f);
+        _isMoving = false;
+    }
     public IEnumerator MoveToPosition(Vector2 targetPosition)
     {
         _howFar = 0f;
