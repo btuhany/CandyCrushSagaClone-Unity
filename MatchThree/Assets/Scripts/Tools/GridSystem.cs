@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -36,7 +37,7 @@ namespace Tools
             if (!_isReady)
                 Debug.LogError("Grid has not been initializd.");
 
-            return x >= 0 && y >= 0 && x <= _dimensions.x && y <= _dimensions.y;
+            return x >= 0 && y >= 0 && x < _dimensions.x && y < _dimensions.y;
         }
         public bool CheckBounds(Vector2Int position)
         {
@@ -93,6 +94,23 @@ namespace Tools
         public T RemoveItemAt(Vector2Int posiiton)
         {
             return RemoveItemAt(posiiton.x, posiiton.y);
+        }
+        protected bool MoveItemTo(int itemPosX, int itemPosY, int x, int y, bool allowOverwrite = false)
+        {
+            if (!CheckBounds(x, y))
+                Debug.LogError($"({x},{y}) are not on the grid.");
+            if (!CheckBounds(itemPosX, itemPosY))
+                Debug.LogError($"({x},{y}) are not on the grid.");
+
+            if (!allowOverwrite && !IsEmpty(x, y))
+                return false;
+
+            _data[x, y] = RemoveItemAt(itemPosX, itemPosY);
+            return true;
+        }
+        protected bool MoveItemTo(Vector2Int itemPos, Vector2Int newPos, bool allowOverwrite)
+        {
+            return MoveItemTo(itemPos.x, itemPos.y, newPos.x, newPos.y, allowOverwrite);
         }
         protected void SwapItems(int x1, int y1, int x2, int y2)
         {

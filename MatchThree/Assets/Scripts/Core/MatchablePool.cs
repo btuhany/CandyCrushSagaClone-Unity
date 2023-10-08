@@ -49,6 +49,43 @@ namespace Core
             
             matchableToRandom.SetVariant(randomVariant);
         }
+        public void ChangeToAnotherRandomVariant(Matchable matchableToRandom)
+        {
+            MatchableVariant currentVariant = matchableToRandom.Variant;
+            MatchableColor randomColor;
+            MatchableType randomType = GetRandomMatchableType();
+            while(randomType == MatchableType.ColorExplode && currentVariant.type == MatchableType.ColorExplode)
+            {
+                randomType = GetRandomMatchableType();
+            }
+
+            if (randomType == MatchableType.ColorExplode)
+            {
+                randomColor = MatchableColor.None;
+            }
+            else
+            {
+                randomColor = GetRandomMatchableColor();
+                while(randomColor == currentVariant.color)
+                {
+                    randomColor = GetRandomMatchableColor();
+                }
+            }
+
+            MatchableVariant randomVariant = null;
+            foreach (MatchableVariant variant in _matchableVariants)
+            {
+                if (variant.color == randomColor && variant.type == randomType)
+                {
+                    randomVariant = variant;
+                }
+            }
+
+            if (randomVariant == null)
+                Debug.Log("Variant not found");
+
+            matchableToRandom.SetVariant(randomVariant);
+        }
 
         private MatchableColor GetRandomMatchableColor()
         {

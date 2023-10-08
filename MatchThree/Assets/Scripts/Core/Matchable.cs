@@ -34,8 +34,8 @@ public class Matchable : Movable
     {
         _spriteRenderer.color = Color.white;
     }
-    //public override string ToString()
-    //{
-    //    return gameObject.name;
-    //}
+    public override string ToString()
+    {
+        return string.Concat(Variant.color.ToString()[0], Variant.type.ToString()[0]);
+    }
 }

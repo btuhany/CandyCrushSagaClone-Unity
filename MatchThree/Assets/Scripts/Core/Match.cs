@@ -1,3 +1,4 @@
+using Core;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -55,7 +56,8 @@ public class Match
 	{
 		for (int i = 0; i < _matchableList.Count; i++)
 		{
-			_matchableList[i].gameObject.SetActive(false);
+			MatchableGrid.Instance.RemoveItemAt(_matchableList[i].GridPosition);
+			MatchablePool.Instance.ReturnObject(_matchableList[i]);
 		}
 	}
 	public override string ToString()

@@ -1,14 +1,13 @@
 using UnityEngine;
 using Tools;
-using System;
 using System.Collections;
-using Unity.VisualScripting;
-using System.Collections.Generic;
+using TMPro;
 
 namespace Core
 {
     public class MatchableGrid : GridSystem<Matchable>
     {
+        [SerializeField] private TextMeshProUGUI _debugText;
         [Header("Grid Config")]
         [SerializeField] private Vector2 _spacing;
         private Transform _transform;
@@ -28,6 +27,7 @@ namespace Core
      
         private void MakeMatchableUnfit(Matchable matchable)
         {
+            _pool.ChangeToAnotherRandomVariant(matchable);
             return;
         }
         private bool AreTwoMatch(Matchable matchable1, Matchable matchable2)
@@ -88,7 +88,7 @@ namespace Core
                 matchGroup = horizontalMatch;
                 if(verticalMatch.Collectable)
                 {
-                    matchGroup.Merge(verticalMatch);
+                    matchGroup.Merge(verticalMatch, true);
                 }
                 return true;
             }
@@ -137,6 +137,39 @@ namespace Core
             matchable1.GridPosition = matchable2.GridPosition;
             matchable2.GridPosition = temp;
         }
+        private void CollapseGrid()
+        {
+            for (int x = 0; x < Dimensions.x; x++)
+            {
+                for (int y = 0; y < Dimensions.y; y++)
+                {
+                    if(IsEmpty(x, y))
+                    {
+                        for (int yEmptyIndex = y + 1; yEmptyIndex < Dimensions.y; yEmptyIndex++)
+                        {
+                            if(!IsEmpty(x, yEmptyIndex) && !GetItemAt(x, yEmptyIndex).isSwapping && !GetItemAt(x, yEmptyIndex).IsMoving)
+                            {
+                               MoveMatchableTo(GetItemAt(x, yEmptyIndex), x, y);
+                               break; //??
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        public void SetMatchablePosition(Matchable matchable, int x, int y)
+        {
+            matchable.transform.position = new Vector3(x * _spacing.x, y * _spacing.y);
+        }
+        private void MoveMatchableTo(Matchable matchable, int posX, int posY)
+        {
+            //RemoveItemAt(matchable.GridPosition);
+            //PutItemAt(matchable, posX, posY);
+            MoveItemTo(matchable.GridPosition.x, matchable.GridPosition.y, posX, posY);
+            matchable.GridPosition = new Vector2Int(posX, posY);
+            SetMatchablePosition(matchable, posX, posY);
+            //TODO: Anim
+        }
         private IEnumerator SwapAnim(Matchable matchable1, Matchable matchable2)
         {
             StartCoroutine(matchable1.MoveToPosition(matchable2.transform.position));
@@ -144,10 +177,11 @@ namespace Core
         }
         public void PopulateGrid(bool allowMatches = false)
         {
-            for (int y = 0; y < Dimensions.y - 1; y++)
+            for (int y = 0; y < Dimensions.y; y++)
             {
-                for (int x = 0; x < Dimensions.x - 1; x++)
+                for (int x = 0; x < Dimensions.x; x++)
                 {
+                    if (CheckBounds(x, y) && !IsEmpty(x, y)) continue;
                     Matchable matchable = _pool.GetRandomVariantMatchable(false);
                     matchable.transform.parent = _transform;
                     PutItemAt(matchable, x, y);
@@ -156,11 +190,10 @@ namespace Core
                     matchable.GridPosition = new Vector2Int(x, y);
                     matchable.gameObject.SetActive(true);
 
-                    //TODO: prevent maches
-                    //if (!allowMatches && IsPartOfAMatch(matchable))
-                    //{
-                    //    MakeMatchableUnfit(matchable);
-                    //}
+                    if (!allowMatches && IsPartOfAMatch(matchable))
+                    {
+                        MakeMatchableUnfit(matchable);
+                    }
                 }
             }
         }
@@ -187,7 +220,9 @@ namespace Core
         }
         public IEnumerator TryMatch(Matchable matchable1, Matchable matchable2)
         {
-            //TODO: isswapping ismoving check
+            if (matchable1.isSwapping || matchable2.isSwapping || matchable1.IsMoving || matchable2.IsMoving)
+                yield break;
+
             matchable1.isSwapping = matchable2.isSwapping = true;
             yield return SwapAnim(matchable1, matchable2);
 
@@ -209,7 +244,22 @@ namespace Core
                 SwapMatchables(matchable1, matchable2);
                 yield return SwapAnim(matchable1, matchable2);
             }
+            else
+            {
+                CollapseGrid();
+                PopulateGrid();
+                //for (int i = 0; i < Dimensions.y; i++)
+                //{
+                //    for (int x = 0; x < Dimensions.x; x++)
+                //    {
+                //        if (IsEmpty(x, i))
+                //            Debug.Log($"x: {x}, y: {i}");
+                //    }
+                //}
+            }
             matchable1.isSwapping = matchable2.isSwapping = false;
+            _debugText.text = this.ToString();
+            //Debug.Log(this.ToString());
         }
         public override void ClearGrid()
         {
