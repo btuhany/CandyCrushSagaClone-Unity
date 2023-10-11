@@ -59,8 +59,23 @@ public class Movable : MonoBehaviour
         while (_howFar != 1f);
         _isMoving = true;
     }
+    public IEnumerator MoveToPositionNoLerp(Vector3 targetPosition, float speed)
+    {
+        _to = targetPosition;
+        _from = transform.position + _startOffset;
+        Vector3 dir = _to - _from;
+        _isMoving = true;
+        do
+        {
+            transform.position += dir * speed * Time.deltaTime;
+            yield return null;
+        }
+        while (Vector3.Distance(transform.position, _to) > 0.05f);
+        transform.position = _to;
+        _isMoving = false;
+    }
     private float EaseFunc(float t)
     {
-        return t * t;
+        return t;
     }
 }

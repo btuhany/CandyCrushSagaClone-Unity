@@ -1,3 +1,4 @@
+using Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,9 +10,17 @@ public class Matchable : Movable
     private Vector2Int _gridPosition;
     private BoxCollider2D _boxCollider;
     private readonly Color _selectedColor = Color.HSVToRGB(0f, 0f, 0.7f);
+    public bool isSwapping;
     public MatchableVariant Variant { get => _variant; }
     public Vector2Int GridPosition { get => _gridPosition; set => _gridPosition = value; }
-    public bool isSwapping;
+    public bool IsTriggerable => _variant.type != MatchableType.Normal && _variant.type != MatchableType.ColorExplode;
+
+    [ContextMenu("Randomize")]
+    public void Randomize()
+    {
+        MatchablePool pool = (MatchablePool)MatchablePool.Instance;
+        pool.ChangeToAnotherRandomVariant(this);
+    }
     private void Awake()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -33,6 +42,10 @@ public class Matchable : Movable
     public void GetUnselected()
     {
         _spriteRenderer.color = Color.white;
+    }
+    public void CollectScorePoint()
+    {
+
     }
     public override string ToString()
     {
