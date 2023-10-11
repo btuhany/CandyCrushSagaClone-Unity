@@ -8,18 +8,23 @@ public class Movable : MonoBehaviour
     private float _howFar;
     private bool _isMoving = false;
     public bool IsMoving { get => _isMoving; }
+    private Transform _transform;
+    protected virtual void Awake()
+    {
+        _transform = GetComponent<Transform>();
+    }
     public IEnumerator MoveToPosition(Vector3 targetPosition)
     {
         _howFar = 0f;
         _to = targetPosition;
-        _from = transform.position + _startOffset;
+        _from = _transform.position + _startOffset;
         _isMoving = true;
         do
         {
             _howFar += Time.deltaTime * _speed;
             if (_howFar > 1f)
                 _howFar = 1f;
-            transform.position = Vector3.LerpUnclamped(_from, _to, EaseFunc(_howFar));
+            _transform.position = Vector3.LerpUnclamped(_from, _to, EaseFunc(_howFar));
             yield return null;
         }
         while (_howFar != 1f);
@@ -29,14 +34,14 @@ public class Movable : MonoBehaviour
     {
         _howFar = 0f;
         _to = targetPosition;
-        _from = transform.position + _startOffset;
+        _from = _transform.position + _startOffset;
         _isMoving = true;
         do
         {
             _howFar += Time.deltaTime * speed;
             if (_howFar > 1f)
                 _howFar = 1f;
-            transform.position = Vector3.LerpUnclamped(_from, _to, EaseFunc(_howFar));
+            _transform.position = Vector3.LerpUnclamped(_from, _to, EaseFunc(_howFar));
             yield return null;
         }
         while (_howFar != 1f);
@@ -46,14 +51,14 @@ public class Movable : MonoBehaviour
     {
         _howFar = 0f;
         _to = targetPosition;
-        _from = transform.position + _startOffset;
+        _from = _transform.position + _startOffset;
         _isMoving = false;
         do
         {
             _howFar += Time.deltaTime * _speed;
             if (_howFar > 1f)
                 _howFar = 1f;
-            transform.position = Vector3.LerpUnclamped(_from, _to, EaseFunc(_howFar));
+            _transform.position = Vector3.LerpUnclamped(_from, _to, EaseFunc(_howFar));
             yield return null;
         }
         while (_howFar != 1f);
@@ -62,16 +67,23 @@ public class Movable : MonoBehaviour
     public IEnumerator MoveToPositionNoLerp(Vector3 targetPosition, float speed)
     {
         _to = targetPosition;
-        _from = transform.position + _startOffset;
+        _from = _transform.position + _startOffset;
         Vector3 dir = _to - _from;
         _isMoving = true;
         do
-        {
-            transform.position += dir * speed * Time.deltaTime;
+        {   
+            float distanceBefore = Vector3.Distance(_transform.position, targetPosition);
+            _transform.position += dir * speed * Time.deltaTime;
+            float distanceAfter = Vector3.Distance(_transform.position, targetPosition);
+            if (distanceBefore < distanceAfter)
+            {
+                _transform.position = _to;
+                break;
+            }
             yield return null;
         }
-        while (Vector3.Distance(transform.position, _to) > 0.05f);
-        transform.position = _to;
+        while (Vector3.Distance(transform.position, _to) > 0.02f);
+        _transform.position = _to;
         _isMoving = false;
     }
     private float EaseFunc(float t)

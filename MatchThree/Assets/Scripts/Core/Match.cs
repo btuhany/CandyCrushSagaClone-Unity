@@ -14,6 +14,7 @@ public class Match
     private bool _originExclusive;
     private MatchableGrid _grid;
     private MatchablePool _pool;
+    public bool isTriggeredSpecialType;
     public Match()
     {
         _matchableList = new List<Matchable>();
@@ -80,48 +81,38 @@ public class Match
     }
     public void Resolve()
     {
-        //for (int i = 0; i < _matchableList.Count; i++)
-        //{
-        //    Matchable matchable = _matchableList[i];
-        //    //if (matchable == null) continue;
-        //    if (matchable.Variant.type == MatchableType.AreaExplode)
-        //    {
-        //        for (int x = matchable.GridPosition.x - 1; x <= matchable.GridPosition.x + 1; x++)
-        //        {
-        //            for (int y = matchable.GridPosition.y - 1; y <= matchable.GridPosition.y + 1; y++)
-        //            {
-        //                if (!_grid.CheckBounds(x, y))
-        //                    continue;
-        //                if (x == matchable.GridPosition.x && y == matchable.GridPosition.y)
-        //                    continue;
-        //                AddMatchable(_grid.GetItemAt(x, y), true);
-        //            }
-        //        }
-        //    }
-        //}
-        for (int i = 0; i < _matchableList.Count; i++)
-        {
-            Matchable matchable = _matchableList[i];
-            if (matchable.Variant.type == MatchableType.HorizontalExplode)
-            {
-                _grid.StartCoroutine(_grid.TriggerHorizontalExplode(matchable));
-            }
-        }
-        for (int i = 0; i < _matchableList.Count; i++)
-        {
-            Matchable matchable = _matchableList[i];
-            if (matchable.Variant.type == MatchableType.VerticalExplode)
-            {
-                _grid.StartCoroutine(_grid.TriggerVerticalExplode(matchable));
-            }
-        }
-
         CollectMatchPoint();
         for (int i = 0; i < _matchableList.Count; i++)
         {
             Matchable matchable = _matchableList[i];
+            //if (matchable == null) continue;
+            //if (matchable.Variant.type == MatchableType.AreaExplode)
+            //{
+            //    isTriggeredSpecialType = true;
+            //    _matchableList.Remove(matchable);
+            //    _grid.TriggerBombExplode(matchable);
+            //}
+            if (matchable.Variant.type == MatchableType.HorizontalExplode)
+            {
+                isTriggeredSpecialType = true;
+                _matchableList.Remove(matchable);
+                _grid.StartCoroutine(_grid.TriggerHorizontalExplode(matchable));
+            }
+            else if (matchable.Variant.type == MatchableType.VerticalExplode)
+            {
+                isTriggeredSpecialType = true;
+                _matchableList.Remove(matchable);
+                _grid.StartCoroutine(_grid.TriggerVerticalExplode(matchable));
+            }
+        }
+
+        for (int i = 0; i < _matchableList.Count; i++)
+        {
+            Matchable matchable = _matchableList[i];
+            if (matchable.IsMoving || matchable.isSwapping) continue;
             matchable.CollectScorePoint();
             _grid.RemoveItemAt(matchable.GridPosition);
+            _grid.StartCoroutine(_grid.CollapseRepopulateAndScanColumn(matchable.GridPosition.x));
             _pool.ReturnObject(matchable);
         }
     }

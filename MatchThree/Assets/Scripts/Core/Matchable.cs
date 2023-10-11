@@ -21,8 +21,9 @@ public class Matchable : Movable
         MatchablePool pool = (MatchablePool)MatchablePool.Instance;
         pool.ChangeToAnotherRandomVariant(this);
     }
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _boxCollider = GetComponent<BoxCollider2D>();
     }
