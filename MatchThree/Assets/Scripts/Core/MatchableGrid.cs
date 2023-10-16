@@ -4,6 +4,8 @@ using System.Collections;
 using TMPro;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using static UnityEngine.InputSystem.LowLevel.InputStateHistory;
+using static UnityEngine.ParticleSystem;
 
 namespace Core
 {
@@ -29,6 +31,7 @@ namespace Core
         private MatchablePool _pool;
         private Movable _move;
         private List<int> _lockedColumns = new List<int>();
+        public Coroutine[] columnCoroutines;
         private WaitForSeconds _scanWaitDelay;
         private WaitForSeconds _explodeWaitDelay;
         private WaitForSeconds _collapsePopulateScanWaitDelay;
@@ -45,6 +48,7 @@ namespace Core
         private void Start()
         {
             StartCoroutine(_move.MoveToPosition(_transform.position)); //from offset
+            columnCoroutines = new Coroutine[Dimensions.x];
         }
         private void Update()
         {
@@ -77,11 +81,12 @@ namespace Core
         {
             Match matchOnLeft = GetMatchesInDirection(matchable, Vector2Int.left);
             Match matchOnRight = GetMatchesInDirection(matchable, Vector2Int.right);
+            
             Match matchOnUp = GetMatchesInDirection(matchable, Vector2Int.up);
             Match matchDown = GetMatchesInDirection(matchable, Vector2Int.down);
-
-            Match horizontalMatch = matchOnLeft.Merge(matchOnRight, true);
-            Match verticalMatch = matchOnUp.Merge(matchDown, true);
+            
+            Match horizontalMatch = matchOnLeft.Merge(matchOnRight);
+            Match verticalMatch = matchOnUp.Merge(matchDown);
 
             if (horizontalMatch.Collectable || verticalMatch.Collectable)
                 return true;
@@ -107,13 +112,12 @@ namespace Core
             verticalMatch.OriginExclusive = false;
             //Debug.Log("verticalMatch: " + verticalMatch);
 
-            
-            if(horizontalMatch.Collectable)
+            if (horizontalMatch.Collectable)
             {
                 matchGroup = horizontalMatch;
                 if(verticalMatch.Collectable)
                 {
-                    matchGroup.Merge(verticalMatch, true);
+                    matchGroup.Merge(verticalMatch);
                 }
                 return true;
             }
@@ -129,15 +133,9 @@ namespace Core
             }
         }
         //Origin match exclusive
-        private Match GetMatchesInDirection(Matchable matchable, Vector2Int direction, bool originExclusive = true)
+        private Match GetMatchesInDirection(Matchable matchable, Vector2Int direction)
         {
-            Match match;
-            if (originExclusive)
-                match = new Match();
-            else
-                match = new Match(matchable);
-
-            int counter = 0;
+            Match match = new Match(matchable);
             Vector2Int pos = matchable.GridPosition + direction;
             while (CheckBounds(pos) && !IsEmpty(pos))
             {
@@ -145,7 +143,6 @@ namespace Core
                 if(AreTwoMatch(matchable, otherMatchable)) //&& !otherMatchable.IsMoving && !otherMatchable.isSwapping)
                 {
                     match.AddMatchable(otherMatchable);
-                    counter++;
                     pos += direction;
                 }
                 else
@@ -227,17 +224,23 @@ namespace Core
         }
         public IEnumerator CollapseRepopulateAndScanColumn(int x, bool forced = false)
         {
-            if(!forced)
+            if(!forced && _lockedColumns.Contains(x))
             {
-                if (_lockedColumns.Contains(x))         
                 yield break;
             }
-            _lockedColumns.Add(x);
+            else
+            {
+                if(!_lockedColumns.Contains(x))
+                    _lockedColumns.Add(x);
+                //Debug.Log("++ " + x + " added to locked list.");
+            }
             yield return new WaitForSeconds(_columnCollapsePopulateScanDelay);
             CollapseColumn(x);
             yield return StartCoroutine(RepopulateColumn(x));
+            if(_lockedColumns.Contains(x))
+                _lockedColumns.Remove(x);
+            //Debug.Log("-- " + x + " removed from the locked list.");
             yield return StartCoroutine(ScanColumn(x));
-            _lockedColumns.Remove(x);
         }
         public void PopulateGrid(bool allowMatches = false)
         {
@@ -367,6 +370,7 @@ namespace Core
                     }
                 }
             }
+
         }
         public bool AreAdjacents(Matchable matchable1, Matchable matchable2)
         {
@@ -397,39 +401,32 @@ namespace Core
             matchable1.isSwapping = matchable2.isSwapping = true;
             yield return SwapAnim(matchable1, matchable2);
 
+            matchable1.isSwapping = matchable2.isSwapping = false;
             SwapMatchables(matchable1, matchable2);
-
+            
             bool swapBack = true;
+            
             if(IsPartOfAMatch(matchable1, out Match match1))
             {
-                match1?.Resolve();
                 swapBack = false;
+                match1?.Resolve();
             }
             if(IsPartOfAMatch(matchable2, out Match match2))
             {
-                match2?.Resolve();
-                swapBack = false;
+               swapBack = false;
+               match2?.Resolve();
             }
             if(swapBack)
             {
+                matchable1.isSwapping = matchable2.isSwapping = true;
                 SwapMatchables(matchable1, matchable2);
                 yield return SwapAnim(matchable1, matchable2);
+                matchable1.isSwapping = matchable2.isSwapping = false;
             }
-            else
-            {
-                if((match1 != null && match1.isTriggeredSpecialType) || (match2 != null && match2.isTriggeredSpecialType))
-                {
-
-                }
-                else
-                {
-                    //StartCoroutine(CollapseRepopulateAndScanTheGrid());
-                }
-            }
-            matchable1.isSwapping = matchable2.isSwapping = false;
         }
         public IEnumerator TriggerHorizontalExplode(Matchable horizontalMatchable, bool delayed = false)
         {
+
             if(delayed)
                 yield return new WaitForSeconds(_horizontalVerticalExplodeStartDelay);
 
@@ -439,11 +436,6 @@ namespace Core
 
             int x2 = horizontalX;
             int x1 = horizontalX;
-
-            horizontalMatchable.CollectScorePoint();
-            RemoveItemAt(horizontalMatchable.GridPosition);
-            _pool.ReturnObject(horizontalMatchable);
-            StartCoroutine(CollapseRepopulateAndScanColumn(horizontalMatchable.GridPosition.x, true));
 
             while (x1 >= 0 || x2 < Dimensions.x)
             {
@@ -459,13 +451,11 @@ namespace Core
                         }
                         else if (matchable2.Variant.type == MatchableType.VerticalExplode)
                         {
-                            StartCoroutine(TriggerVerticalExplode(matchable2, true));
+                            //StartCoroutine(TriggerVerticalExplode(matchable2, true));
                         }
-                        matchable2.CollectScorePoint();
                         RemoveItemAt(matchable2.GridPosition);
                         _pool.ReturnObject(matchable2);
-                        StartCoroutine(CollapseRepopulateAndScanColumn(x2));
-
+                        columnCoroutines[x2] = StartCoroutine(CollapseRepopulateAndScanColumn(x2));
                     }
                 }
                 //if (!CheckBounds(x, y))
@@ -482,31 +472,39 @@ namespace Core
                         }
                         else if (matchable.Variant.type == MatchableType.VerticalExplode)
                         {
-                            StartCoroutine(TriggerVerticalExplode(matchable, true));
+                            //StartCoroutine(TriggerVerticalExplode(matchable, true));
                         }
-                        matchable.CollectScorePoint();
                         RemoveItemAt(matchable.GridPosition);
                         _pool.ReturnObject(matchable);
-                        StartCoroutine(CollapseRepopulateAndScanColumn(x1));
+                        columnCoroutines[x1] = StartCoroutine(CollapseRepopulateAndScanColumn(x1));
                     }
                 }
                 yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
             }
+
         }
         public IEnumerator TriggerVerticalExplode(Matchable verticalMatchable, bool delayed = false)
         {
-            _lockedColumns.Add(verticalMatchable.GridPosition.x);
+            int x = verticalMatchable.GridPosition.x;
+
+            if (_lockedColumns.Contains(x))
+            {
+                if(columnCoroutines[x] != null)
+                {
+                    StopCoroutine(columnCoroutines[x]);
+                }
+            }
+            else
+            {
+                _lockedColumns.Add(x);
+            }
             if (delayed)
                 yield return new WaitForSeconds(_horizontalVerticalExplodeStartDelay);
 
-            int x = verticalMatchable.GridPosition.x;
 
             int y1 = verticalMatchable.GridPosition.y;
             int y2 = verticalMatchable.GridPosition.y;
 
-            verticalMatchable.CollectScorePoint();
-            RemoveItemAt(verticalMatchable.GridPosition);
-            _pool.ReturnObject(verticalMatchable);
             yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
 
             while (y2 < Dimensions.y || y1 >= 0)
@@ -523,9 +521,8 @@ namespace Core
                         }
                         else if (matchable2.Variant.type == MatchableType.HorizontalExplode)
                         {
-                            StartCoroutine(TriggerHorizontalExplode(matchable2, true));
+                            //StartCoroutine(TriggerHorizontalExplode(matchable2, true));
                         }
-                        matchable2.CollectScorePoint();
                         RemoveItemAt(matchable2.GridPosition);
                         _pool.ReturnObject(matchable2);
                     }
@@ -536,7 +533,7 @@ namespace Core
                 if (y1 >= 0 && !IsEmpty(x, y1))
                 {
                     Matchable matchable = GetItemAt(x, y1);
-                    if(!matchable.isSwapping && !matchable.IsMoving)
+                    if (!matchable.isSwapping && !matchable.IsMoving)
                     {
                         if (matchable.Variant.type == MatchableType.AreaExplode)
                         {
@@ -544,30 +541,35 @@ namespace Core
                         }
                         else if (matchable.Variant.type == MatchableType.HorizontalExplode)
                         {
-                            StartCoroutine(TriggerHorizontalExplode(matchable, true));
+                            //StartCoroutine(TriggerHorizontalExplode(matchable, true));
                         }
-                        matchable.CollectScorePoint();
                         RemoveItemAt(matchable.GridPosition);
                         _pool.ReturnObject(matchable);
                     }
                 }
                 yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
+                yield return null;
             }
-            _lockedColumns.Remove(verticalMatchable.GridPosition.x);
-            yield return StartCoroutine(CollapseRepopulateAndScanColumn(verticalMatchable.GridPosition.x));
+            if (_lockedColumns.Contains(x))
+                _lockedColumns.Remove(x);
+            columnCoroutines[x] = StartCoroutine(CollapseRepopulateAndScanColumn(x));
         }
-        public void TriggerBombExplode(Matchable bombMatchable)
+        public void TriggerAreaExplode(Matchable bombMatchable, Match match)
         {
-            bombMatchable.CollectScorePoint();
-            for (int x = bombMatchable.GridPosition.x - 1; x <= bombMatchable.GridPosition.x + 1; x++)
+            int matchableX = bombMatchable.GridPosition.x;
+            int matchableY = bombMatchable.GridPosition.y;
+
+            for (int x = matchableX - 1; x <= matchableX + 1; x++)
             {
-                for (int y = bombMatchable.GridPosition.y - 1; y <= bombMatchable.GridPosition.y + 1; y++)
+                if (x >= Dimensions.x || x < 0) continue;
+                for (int y = matchableY - 1; y <= matchableY + 1; y++)
                 {
                     if (!CheckBounds(x, y) || IsEmpty(x, y))
                         continue;
+
                     Matchable matchable = GetItemAt(x, y);
 
-                    if (matchable == bombMatchable || matchable.isSwapping || matchable.IsMoving)
+                    if (match.MatchableList.Contains(matchable)) 
                         continue;
 
                     //if(matchable.Variant.type == MatchableType.HorizontalExplode)
@@ -584,9 +586,13 @@ namespace Core
                     //    TriggerBombExplode(matchable);
                     //}
                     //matchable.CollectScorePoint();
-                    //RemoveItemAt(matchable.GridPosition);
-                    //_pool.ReturnObject(matchable);
+                    RemoveItemAt(matchable.GridPosition);
+                    _pool.ReturnObject(matchable);
                 }
+                if (_lockedColumns.Contains(x))
+                    _lockedColumns.Remove(x);
+
+                columnCoroutines[x] = StartCoroutine(CollapseRepopulateAndScanColumn(x));
             }
         }
         public override void ClearGrid()
