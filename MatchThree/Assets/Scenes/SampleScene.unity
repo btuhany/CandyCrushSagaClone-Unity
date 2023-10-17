@@ -874,19 +874,19 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: f98d1e53131b0b448870a320819bd3bf, type: 2}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _typePossibilityNodes.Array.data[0]
-      value: 0.75
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _typePossibilityNodes.Array.data[1]
-      value: 0.8125
+      value: 0.31
       objectReference: {fileID: 0}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _typePossibilityNodes.Array.data[2]
-      value: 0.875
+      value: 0.65
       objectReference: {fileID: 0}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _typePossibilityNodes.Array.data[3]
-      value: 0.9375
+      value: 0.98
       objectReference: {fileID: 0}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _colorPossibilityNodes.Array.data[0]
@@ -1068,7 +1068,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _scanColumnDelay
-      value: 0
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _collapseSpeedFactor
@@ -1084,7 +1084,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _repopulateColumnDelay
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _collapsePopulateScanDelay
@@ -1100,15 +1100,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _columnCollapsePopulateScanDelay
-      value: 0.1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _horizontalVerticalExplodeDelays
-      value: 0.05
+      value: 0.03
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _horizontalVerticalExplodeStartDelay
-      value: 0.1
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}

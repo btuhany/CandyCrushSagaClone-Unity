@@ -57,11 +57,11 @@ public class Match
             }
             else if (matchable.Variant.type == MatchableType.HorizontalExplode)
             {
-                _grid.StartCoroutine(_grid.TriggerHorizontalExplode(matchable));
+                _grid.StartCoroutine(_grid.TriggerHorizontalExplode(matchable, this));
             }
             else if (matchable.Variant.type == MatchableType.VerticalExplode)
             {
-                _grid.StartCoroutine(_grid.TriggerVerticalExplode(matchable));
+                _grid.StartCoroutine(_grid.TriggerVerticalExplode(matchable, this));
             }
         }
 
