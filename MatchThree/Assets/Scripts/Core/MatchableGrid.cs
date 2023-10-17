@@ -616,20 +616,23 @@ namespace Core
 
                     if(matchable.Variant.type == MatchableType.HorizontalExplode)
                     {
-                        //StartCoroutine(TriggerHorizontalExplode(matchable, match));
+                        StartCoroutine(TriggerHorizontalExplode(matchable, match));
                     }
                     else if(matchable.Variant.type == MatchableType.VerticalExplode)
                     {
-                        //StartCoroutine(TriggerVerticalExplode(matchable, match));
+                        StartCoroutine(TriggerVerticalExplode(matchable, match));
                     }
-                    //else if(matchable.Variant.type == MatchableType.AreaExplode)
-                    //{
-                    //    gridCheckAfter = false;
-                    //    TriggerBombExplode(matchable);
-                    //}
-                    
-                    RemoveItemAt(matchable.GridPosition);
-                    _pool.ReturnObject(matchable);
+                    else if(matchable.Variant.type == MatchableType.AreaExplode)
+                    {
+                        RemoveItemAt(matchable.GridPosition);
+                        _pool.ReturnObject(matchable);
+                        TriggerAreaExplode(matchable, match);
+                    }
+                    else
+                    {
+                        RemoveItemAt(matchable.GridPosition);
+                        _pool.ReturnObject(matchable);
+                    }
                 }
                 if(x != matchableX)
                 {
