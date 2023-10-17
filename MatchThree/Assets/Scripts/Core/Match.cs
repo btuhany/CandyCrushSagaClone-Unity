@@ -1,5 +1,8 @@
 using Core;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Runtime.CompilerServices;
+using UnityEngine;
 
 public class Match
 {
@@ -18,14 +21,77 @@ public class Match
     public Match(Matchable matchable)
     {
         _matchableList = new List<Matchable>();
-        _matchableList.Add(matchable);
         _originMatchable = matchable;
+        _matchableList.Add(matchable);
         _grid = (MatchableGrid)MatchableGrid.Instance;
         _pool = (MatchablePool)MatchablePool.Instance;
     }
     private void CollectMatchPoint()
     {
        
+    }
+    private bool TryTransform()
+    {
+        bool doTransfrom = true;
+        foreach (Matchable matchable in _matchableList)
+        {
+            if (matchable.Variant.type != MatchableType.Normal)
+                doTransfrom = false;
+        }
+
+        if (!doTransfrom)
+            return false;
+
+        bool isMixedOrientation = false;
+        int minX = _matchableList[0].GridPosition.x;
+        int maxX = _matchableList[0].GridPosition.x;
+        int minY = _matchableList[0].GridPosition.y;
+        int maxY = _matchableList[0].GridPosition.y;
+        foreach (Matchable matchable in _matchableList)
+        {
+            int x = matchable.GridPosition.x;
+            int y = matchable.GridPosition.y;
+            if (x >= maxX)
+                maxX = x;
+            if (x <= minX)
+                minX = x;
+            if (y >= maxY)
+                maxY = y;
+            if (y <= minY)
+                minY = y;
+        }
+        if (minX != maxX)
+            if (minY != maxY)
+                isMixedOrientation = true;
+
+        if (isMixedOrientation)
+        {
+            MatchableColor color = _originMatchable.Variant.color;
+            _originMatchable.SetVariant(_pool.GetVariant(color, MatchableType.AreaExplode));
+        }
+        else
+        {
+            MatchableColor color = _originMatchable.Variant.color;
+            if (_matchableList.Count > 4)
+            {
+                _originMatchable.SetVariant(_pool.GetVariant(MatchableColor.None, MatchableType.ColorExplode));
+            }
+            else
+            {
+                if (minX == maxX)
+                    _originMatchable.SetVariant(_pool.GetVariant(color, MatchableType.VerticalExplode));
+                else if (minY == maxY)
+                    _originMatchable.SetVariant(_pool.GetVariant(color, MatchableType.HorizontalExplode));
+            }
+            
+        }
+
+        return true;
+        //Debug.Log("min x: " + minX);
+        //Debug.Log("max x: " + maxX);
+        //Debug.Log("min y: " + minY);
+        //Debug.Log("max y: " + maxY);
+        //Debug.Log(isMixedOrientation);
     }
     public void AddMatchable(Matchable matchable)
     {
@@ -65,11 +131,18 @@ public class Match
             }
         }
 
+        bool isTransformed = false;
+        if (_matchableList.Count > 3)
+        {
+            isTransformed = TryTransform();
+        }
+
         for (int i = 0; i < _matchableList.Count; i++)
         {
             Matchable matchable = _matchableList[i];
             if (matchable.IsMoving) continue;
             matchable.CollectScorePoint();
+            if (isTransformed && matchable == _originMatchable) continue;
             _grid.RemoveItemAt(matchable.GridPosition);
             _pool.ReturnObject(matchable);
             _grid.columnCoroutines[matchable.GridPosition.x] = _grid.StartCoroutine(_grid.CollapseRepopulateAndScanColumn(matchable.GridPosition.x));

@@ -616,10 +616,14 @@ namespace Core
 
                     if(matchable.Variant.type == MatchableType.HorizontalExplode)
                     {
+                        RemoveItemAt(matchable.GridPosition);
+                        _pool.ReturnObject(matchable);
                         StartCoroutine(TriggerHorizontalExplode(matchable, match));
                     }
                     else if(matchable.Variant.type == MatchableType.VerticalExplode)
                     {
+                        RemoveItemAt(matchable.GridPosition);
+                        _pool.ReturnObject(matchable);
                         StartCoroutine(TriggerVerticalExplode(matchable, match));
                     }
                     else if(matchable.Variant.type == MatchableType.AreaExplode)

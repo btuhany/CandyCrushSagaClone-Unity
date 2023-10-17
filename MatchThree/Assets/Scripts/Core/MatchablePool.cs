@@ -117,6 +117,19 @@ namespace Core
             else
                 return MatchableType.Normal;
         }
+        public MatchableVariant GetVariant(MatchableColor color, MatchableType type)
+        {
+            MatchableVariant variant = null;
+            foreach (MatchableVariant tempVariant in _matchableVariants)
+            {
+                if (tempVariant.color == color && tempVariant.type == type)
+                {
+                    variant = tempVariant;
+                    break;
+                }
+            }
+            return variant;
+        }
         public bool RollDice(float possibility)
         {
             possibility = Mathf.Clamp01(possibility);
