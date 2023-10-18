@@ -12,12 +12,15 @@ public class Matchable : Movable
     public MatchableVariant Variant { get => _variant; }
     public Vector2Int GridPosition { get => _gridPosition; set => _gridPosition = value; }
     public bool IsTriggerable => _variant.type != MatchableType.Normal && _variant.type != MatchableType.ColorExplode;
+    [SerializeField] private MatchableType _changeType;
+    [SerializeField] private MatchableColor _changeColor;
 
-    [ContextMenu("Randomize")]
-    public void Randomize()
+    [ContextMenu("Change Variant")]
+    public void ChangeVariant()
     {
         MatchablePool pool = (MatchablePool)MatchablePool.Instance;
-        pool.ChangeToAnotherRandomVariant(this);
+        //pool.ChangeToAnotherRandomVariant(this);
+        SetVariant(pool.GetVariant(_changeColor, _changeType));
     }
     protected override void Awake()
     {

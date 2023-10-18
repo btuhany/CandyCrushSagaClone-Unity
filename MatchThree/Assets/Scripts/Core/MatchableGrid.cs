@@ -22,7 +22,9 @@ namespace Core
         [SerializeField] private float _columnCollapsePopulateScanDelay = 0.1f;
         [SerializeField] private float _repopulateColumnDelay = 0.1f;
         [SerializeField] private float _scanColumnDelay = 0.5f;
-        
+
+        [SerializeField] private float _colorExplodeStartDelay = 0.15f;
+        [SerializeField] private float _colorExplodeDelays = 0.075f;
         [SerializeField] private TextMeshProUGUI _debugText;
         [Header("Grid Config")]
         [SerializeField] private Vector2 _spacing;
@@ -209,6 +211,70 @@ namespace Core
             //SetMatchablePosition(matchable, posX, posY);
             matchable.StartCoroutine(matchable.MoveToPositionNoLerp(new Vector3(posX * _spacing.x, posY * _spacing.y, 0f), speed));
             //TODO: Anim
+        }
+        private bool IsSpecialCombo(Matchable matchable1, Matchable matchable2)
+        {
+            Match nullMatch = null;
+            MatchableType type1 = matchable1.Variant.type;
+            MatchableType type2 = matchable2.Variant.type;
+
+            if(type1 == MatchableType.ColorExplode)
+            {
+                int xColorExplode = matchable1.GridPosition.x;
+                RemoveItemAt(matchable1.GridPosition);
+                _pool.ReturnObject(matchable1);
+                columnCoroutines[xColorExplode] = StartCoroutine(CollapseRepopulateAndScanColumn(xColorExplode));
+                StartCoroutine(TriggerColorExplode(matchable2));
+            }
+            else if(type2 == MatchableType.ColorExplode)
+            {
+                int xColorExplode = matchable2.GridPosition.x;
+                RemoveItemAt(matchable2.GridPosition);
+                _pool.ReturnObject(matchable2);
+                columnCoroutines[xColorExplode] = StartCoroutine(CollapseRepopulateAndScanColumn(xColorExplode));
+                StartCoroutine(TriggerColorExplode(matchable1));
+            }
+
+            if((type1 == MatchableType.HorizontalExplode && type2 == MatchableType.VerticalExplode) || (type2 == MatchableType.HorizontalExplode && type1 == MatchableType.VerticalExplode))
+            {
+                if(type1 == MatchableType.HorizontalExplode && type2 == MatchableType.VerticalExplode)
+                {
+                    StartCoroutine(TriggerHorizontalExplode(matchable1, nullMatch, true));
+                    StartCoroutine(TriggerVerticalExplode(matchable2, nullMatch));
+                }
+                else if(type2 == MatchableType.HorizontalExplode && type1 == MatchableType.VerticalExplode)
+                {
+                    StartCoroutine(TriggerVerticalExplode(matchable1, nullMatch));
+                    StartCoroutine(TriggerHorizontalExplode(matchable2, nullMatch, true));
+                }
+                return true;
+            }
+
+            if(((type1 == MatchableType.HorizontalExplode || type1 == MatchableType.VerticalExplode) && type2 == MatchableType.AreaExplode) || ((type2 == MatchableType.HorizontalExplode || type2 == MatchableType.VerticalExplode) && type1 == MatchableType.AreaExplode))
+            {
+                int posX, posY;
+                if (type1 == MatchableType.AreaExplode)
+                {
+                    posX = matchable1.GridPosition.x;
+                    posY = matchable1.GridPosition.y;
+                }
+                else
+                {
+                    posX = matchable2.GridPosition.x;
+                    posY = matchable2.GridPosition.y;
+                }
+                for (int y = posY - 1; y <= posY + 1; y++)
+                {
+                    StartCoroutine(TriggerHorizontalExplode(GetItemAt(posX, y), nullMatch, true));
+                }
+                for (int x = posX - 1; x <= posX + 1; x++)
+                {
+                    StartCoroutine(TriggerVerticalExplode(GetItemAt(x, posY), nullMatch));
+                }
+                RemoveItemAt(matchable1.GridPosition);
+                _pool.ReturnObject(matchable1);
+            }
+            return false;
         }
         private IEnumerator SwapAnim(Matchable matchable1, Matchable matchable2)
         {
@@ -412,6 +478,10 @@ namespace Core
             
             bool swapBack = true;
             
+            if(IsSpecialCombo(matchable1, matchable2))
+            {
+                yield break;
+            }
             if(IsPartOfAMatch(matchable1, out Match match1))
             {
                 swapBack = false;
@@ -430,7 +500,132 @@ namespace Core
                 matchable1.isSwapping = matchable2.isSwapping = false;
             }
         }
-        public IEnumerator TriggerHorizontalExplode(Matchable horizontalMatchable, Match match)
+        public IEnumerator TriggerColorExplode(Matchable matchable)
+        {
+            MatchableType type = matchable.Variant.type;
+            switch (type)
+            {
+                case MatchableType.Normal:
+                    yield return new WaitForSeconds(0.1f);
+                    for (int x = 0; x < Dimensions.x; x++)
+                    {
+                        for (int y = 0; y < Dimensions.y; y++)
+                        {
+                            if (!IsEmpty(x, y) && !GetItemAt(x, y).isSwapping && !GetItemAt(x, y).IsMoving)
+                            {
+                                Matchable matchableAtPos = GetItemAt(x, y);
+                                if (matchableAtPos.Variant.color == matchable.Variant.color)
+                                {
+                                    RemoveItemAt(matchableAtPos.GridPosition);
+                                    _pool.ReturnObject(matchableAtPos);
+                                    columnCoroutines[x] = StartCoroutine(CollapseRepopulateAndScanColumn(x));
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case MatchableType.HorizontalExplode:
+                    List<Matchable> horizontalsToTrigger = new List<Matchable>();
+                    for (int x = 0; x < Dimensions.x; x++)
+                    {
+                        for (int y = 0; y < Dimensions.y; y++)
+                        {
+                            if (!IsEmpty(x, y) && !GetItemAt(x, y).isSwapping && !GetItemAt(x, y).IsMoving)
+                            {
+                                Matchable matchableAtPos = GetItemAt(x, y);
+                                if (matchableAtPos.Variant.color == matchable.Variant.color)
+                                {
+                                    matchableAtPos.SetVariant(_pool.GetVariant(matchable.Variant.color, type));
+                                    horizontalsToTrigger.Add(matchableAtPos);
+
+                                }
+                            }
+                        }
+                    }
+                    yield return new WaitForSeconds(_colorExplodeStartDelay);
+                    foreach (Matchable matchableToTrigger in horizontalsToTrigger)
+                    {
+                        StartCoroutine(TriggerHorizontalExplode(matchableToTrigger, null, true));
+                        yield return new WaitForSeconds(_colorExplodeDelays);
+                    }
+                    break;
+                case MatchableType.VerticalExplode:
+                    List<Matchable> verticalsToTrigger = new List<Matchable>();
+                    for (int x = 0; x < Dimensions.x; x++)
+                    {
+                        for (int y = 0; y < Dimensions.y; y++)
+                        {
+                            if (!IsEmpty(x, y) && !GetItemAt(x, y).isSwapping && !GetItemAt(x, y).IsMoving)
+                            {
+                                Matchable matchableAtPos = GetItemAt(x, y);
+                                if (matchableAtPos.Variant.color == matchable.Variant.color)
+                                {
+                                    matchableAtPos.SetVariant(_pool.GetVariant(matchable.Variant.color, type));
+                                    verticalsToTrigger.Add(matchableAtPos);
+
+                                }
+                            }
+                        }
+                    }
+                    yield return new WaitForSeconds(_colorExplodeStartDelay);
+                    foreach (Matchable matchableToTrigger in verticalsToTrigger)
+                    {
+                        StartCoroutine(TriggerVerticalExplode(matchableToTrigger, null));
+                        yield return new WaitForSeconds(_colorExplodeDelays);
+                        //Matchable check for bugs
+                        if (!IsEmpty(matchableToTrigger.GridPosition) && GetItemAt(matchableToTrigger.GridPosition) == matchableToTrigger)
+                        {
+                            RemoveItemAt(matchableToTrigger.GridPosition);
+                            _pool.ReturnObject(matchableToTrigger);
+                            columnCoroutines[matchableToTrigger.GridPosition.x] = StartCoroutine(CollapseRepopulateAndScanColumn(matchableToTrigger.GridPosition.x));
+                        }
+                    }
+                    break;
+                case MatchableType.AreaExplode:
+                    List<Matchable> areaExplodesToTrigger = new List<Matchable>();
+                    for (int x = 0; x < Dimensions.x; x++)
+                    {
+                        for (int y = 0; y < Dimensions.y; y++)
+                        {
+                            if (!IsEmpty(x, y) && !GetItemAt(x, y).isSwapping && !GetItemAt(x, y).IsMoving)
+                            {
+                                Matchable matchableAtPos = GetItemAt(x, y);
+                                if (matchableAtPos.Variant.color == matchable.Variant.color)
+                                {
+                                    matchableAtPos.SetVariant(_pool.GetVariant(matchable.Variant.color, type));
+                                    areaExplodesToTrigger.Add(matchableAtPos);
+                                }
+                            }
+                        }
+                    }
+                    yield return new WaitForSeconds(_colorExplodeStartDelay);
+                    foreach (Matchable matchableToTrigger in areaExplodesToTrigger)
+                    {
+                        TriggerAreaExplode(matchableToTrigger, null, true);
+                        yield return new WaitForSeconds(_colorExplodeDelays);
+                    }
+                    break;
+                case MatchableType.ColorExplode:
+                    for (int x = 0; x < Dimensions.x; x++)
+                    {
+                        for (int y = 0; y < Dimensions.y; y++)
+                        {
+                            Matchable matchableAtPos = GetItemAt(x, y);
+                            if (matchableAtPos == null) continue;
+                            RemoveItemAt(matchableAtPos.GridPosition);
+                            _pool.ReturnObject(matchableAtPos);
+                            columnCoroutines[matchableAtPos.GridPosition.x] = StartCoroutine(CollapseRepopulateAndScanColumn(matchableAtPos.GridPosition.x));
+                            yield return new WaitForSeconds(0.07f);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+            
+            yield return null;
+        }
+        public IEnumerator TriggerHorizontalExplode(Matchable horizontalMatchable, Match match, bool removeOrigin = false)
         {
             int y = horizontalMatchable.GridPosition.y;
             int horizontalX = horizontalMatchable.GridPosition.x;
@@ -438,14 +633,19 @@ namespace Core
 
             int x2 = horizontalX;
             int x1 = horizontalX;
-
+            if(removeOrigin)
+            {
+                RemoveItemAt(horizontalMatchable.GridPosition);
+                _pool.ReturnObject(horizontalMatchable);
+                columnCoroutines[horizontalX] = StartCoroutine(CollapseRepopulateAndScanColumn(horizontalX));
+            }
             while (x1 >= 0 || x2 < Dimensions.x)
             {
                 x2++;
                 if (x2 < Dimensions.x && !IsEmpty(x2, y))
                 {
                     Matchable matchable2 = GetItemAt(x2, y);
-                    if(!match.MatchableList.Contains(matchable2))
+                    if(match == null || !match.MatchableList.Contains(matchable2))
                     {
                         if (!matchable2.isSwapping && !matchable2.IsMoving)
                         {
@@ -476,7 +676,7 @@ namespace Core
                 if (x1 >= 0 && !IsEmpty(x1, y))
                 {
                     Matchable matchable = GetItemAt(x1, y);
-                    if (!match.MatchableList.Contains(matchable))
+                    if (match == null || !match.MatchableList.Contains(matchable))
                     {
                         if (!matchable.isSwapping && !matchable.IsMoving)
                         {
@@ -505,7 +705,7 @@ namespace Core
             }
 
         }
-        public IEnumerator TriggerVerticalExplode(Matchable verticalMatchable, Match match)
+        public IEnumerator TriggerVerticalExplode(Matchable verticalMatchable, Match match, bool removeOrigin = false)
         {
             int x = verticalMatchable.GridPosition.x;
 
@@ -530,6 +730,12 @@ namespace Core
             int y1 = verticalMatchable.GridPosition.y;
             int y2 = verticalMatchable.GridPosition.y;
 
+            if(removeOrigin)
+            {
+                RemoveItemAt(verticalMatchable.GridPosition);
+                _pool.ReturnObject(verticalMatchable);
+            }
+
             yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
 
             while (y2 < Dimensions.y || y1 >= 0)
@@ -538,7 +744,7 @@ namespace Core
                 if (y2 < Dimensions.y && !IsEmpty(x, y2))
                 {
                     Matchable matchable2 = GetItemAt(x, y2);
-                    if (!match.MatchableList.Contains(matchable2))
+                    if (match == null || !match.MatchableList.Contains(matchable2))
                     {
                         if (!matchable2.isSwapping && !matchable2.IsMoving)
                         {
@@ -566,7 +772,7 @@ namespace Core
                 if (y1 >= 0 && !IsEmpty(x, y1))
                 {
                     Matchable matchable = GetItemAt(x, y1);
-                    if(!match.MatchableList.Contains(matchable))
+                    if(match == null || !match.MatchableList.Contains(matchable))
                     {
                         if (!matchable.isSwapping && !matchable.IsMoving)
                         {
@@ -611,7 +817,7 @@ namespace Core
 
                     Matchable matchable = GetItemAt(x, y);
 
-                    if (match.MatchableList.Contains(matchable) || matchable.IsMoving) 
+                    if ((match != null && match.MatchableList.Contains(matchable)) || matchable.IsMoving) 
                         continue;
 
                     if(matchable.Variant.type == MatchableType.HorizontalExplode)

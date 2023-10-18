@@ -874,19 +874,19 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: f98d1e53131b0b448870a320819bd3bf, type: 2}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _typePossibilityNodes.Array.data[0]
-      value: 0.1
+      value: 0.87
       objectReference: {fileID: 0}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _typePossibilityNodes.Array.data[1]
-      value: 0.4
+      value: 0.88
       objectReference: {fileID: 0}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _typePossibilityNodes.Array.data[2]
-      value: 0.65
+      value: 0.89
       objectReference: {fileID: 0}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _typePossibilityNodes.Array.data[3]
-      value: 0.98
+      value: 0.99
       objectReference: {fileID: 0}
     - target: {fileID: 2678671145687035023, guid: 13b33abf40aeef14a890764251c2c81e, type: 3}
       propertyPath: _colorPossibilityNodes.Array.data[0]
