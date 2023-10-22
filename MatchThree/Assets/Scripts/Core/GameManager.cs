@@ -25,12 +25,23 @@ namespace Core
         {
             _grid.ClearGrid();
         }
+        [ContextMenu("Test")]
+        private void Testt()
+        {
+            MatchableFX fxx = MatchableFXPool.Instance.GetObject();
+            fxx.transform.position = _grid.GetItemAt(0, 0).transform.position;
+            fxx.PlayColorExplode(_grid.GetItemAt(9, 9).transform);
+        }
         protected override void Awake()
         {
             base.Awake();
             _grid = (MatchableGrid) MatchableGrid.Instance;
             _grid.InitializeGrid(_dimensions);
             _grid.PopulateGrid();
+        }
+        private void Start()
+        {
+            
         }
     }
 }

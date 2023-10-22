@@ -7,7 +7,6 @@ namespace Core
     {
         [SerializeField] private MatchableVariant[] _matchableVariants;
 
-
         [Space]
         [NonReorderable]
         [Header("Red, Blue, Green, Purple, Orange, Yellow\r\nFrom lower to higher values in range of 0, 1")]
@@ -137,7 +136,14 @@ namespace Core
                 return true;
             return false;
         }
-        
+        public override void ReturnObject(Matchable obj)
+        {
+            MatchableFX fxObj = MatchableFXPool.Instance.GetObject();
+            fxObj.ChangeColor(obj.Variant.color);
+            fxObj.PlayFX(MatchableType.Normal);
+            fxObj.transform.position = obj.transform.position;   
+            base.ReturnObject(obj);
+        }
     }
 }
 

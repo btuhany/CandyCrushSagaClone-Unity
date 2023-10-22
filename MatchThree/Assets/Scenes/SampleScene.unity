@@ -486,6 +486,75 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1734955639
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_RootOrder
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 15.230789
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 12.8875265
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -4.4421115
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 293975788805378857, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 399602854972155370, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: _size
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 399602854972155370, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: _prefab
+      value: 
+      objectReference: {fileID: 5657610812838687269, guid: cf784bc9ba339994190940f554c9a4e4, type: 3}
+    - target: {fileID: 399602854972155370, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: _expandingSize
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 3202378292588954260, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
+      propertyPath: m_Name
+      value: MatchableFXPool
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c808e1b69f51fd941b471a4f86d69d0e, type: 3}
 --- !u!1 &1743033250
 GameObject:
   m_ObjectHideFlags: 0
@@ -1084,7 +1153,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _repopulateColumnDelay
-      value: 1
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _collapsePopulateScanDelay
@@ -1100,7 +1169,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _columnCollapsePopulateScanDelay
-      value: 1
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 7235145388085741399, guid: 3bb8de72581f6fd4a90af053c723794d, type: 3}
       propertyPath: _horizontalVerticalExplodeDelays

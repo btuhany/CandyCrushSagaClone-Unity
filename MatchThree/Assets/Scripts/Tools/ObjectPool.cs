@@ -52,7 +52,7 @@ namespace Tools
             //newObj.transform.parent = null;
             return newObj;
         }
-        public void ReturnObject(T obj)
+        public virtual void ReturnObject(T obj)
         {
             obj.gameObject.SetActive(false);
             obj.gameObject.transform.SetParent(_transform);
