@@ -53,6 +53,7 @@ public class InputReader : MonoBehaviour, InputActions.ITouchscreenActions
     {
         Vector2 worldPoint = _mainCam.ScreenToWorldPoint(_touchPos);
         RaycastHit2D hit = Physics2D.Raycast(worldPoint, Vector2.zero);
+        
         if (hit.collider != null)
         {
             if (hit.collider.TryGetComponent(out Matchable matchable))
@@ -62,14 +63,48 @@ public class InputReader : MonoBehaviour, InputActions.ITouchscreenActions
             }
         }
 
-        if(_selectedMatchables[0] != null && _selectedMatchables[1] != null)
+        if (_selectedMatchables[0] != null && _selectedMatchables[1] != null)
+        {
             if (_grid.AreAdjacents(_selectedMatchables[0], _selectedMatchables[1]))
             {
                 //Debug.Log("First: " + _selectedMatchables[0].GridPosition + "Second: " + _selectedMatchables[1].GridPosition);
                 StartCoroutine(_grid.TryMatch(_selectedMatchables[0], _selectedMatchables[1]));
             }
+            else
+            {
+                int x = _selectedMatchables[0].GridPosition.x;
+                int y = _selectedMatchables[0].GridPosition.y;
 
-        
+                int selectedX = _selectedMatchables[1].GridPosition.x;
+                int selectedY = _selectedMatchables[1].GridPosition.y;
+
+                if (selectedX > x)
+                {
+                    if (selectedY == y)
+                    {
+                        StartCoroutine(_grid.TryMatch(_selectedMatchables[0], _grid.GetItemAt(x + 1, selectedY)));
+                    }
+                }
+                else if(selectedX < x)
+                {
+                    if (selectedY == y)
+                    {
+                        StartCoroutine(_grid.TryMatch(_selectedMatchables[0], _grid.GetItemAt(x - 1, selectedY)));
+                    }
+                }
+                else
+                {
+                    if (selectedY > y)
+                    {
+                        StartCoroutine(_grid.TryMatch(_selectedMatchables[0], _grid.GetItemAt(x, y + 1)));
+                    }
+                    else
+                    {
+                        StartCoroutine(_grid.TryMatch(_selectedMatchables[0], _grid.GetItemAt(x, y - 1)));
+                    }
+                }
+            }
+        }
         _selectedMatchables[0]?.GetUnselected();
         _selectedMatchables[0] = _selectedMatchables[1] = null;
     }
