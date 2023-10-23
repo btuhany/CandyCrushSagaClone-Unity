@@ -68,10 +68,12 @@ public class MatchableFX : MonoBehaviour
         else if (type == MatchableType.HorizontalExplode)
         {
             _horizontalParticle.Play();
+            SoundManager.Instance.PlaySound(6);
         }
         else if (type == MatchableType.VerticalExplode)
         {
             _verticalParticle.Play();
+            SoundManager.Instance.PlaySound(6);
         }
     }
     public void PlayColorExplode(Transform target)

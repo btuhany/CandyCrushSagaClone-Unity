@@ -28,6 +28,7 @@ public class Movable : MonoBehaviour
             yield return null;
         }
         while (_howFar != 1f);
+        _transform.position = targetPosition;
         _isMoving = false;
     }
     public IEnumerator MoveToPosition(Vector3 targetPosition, float speed)

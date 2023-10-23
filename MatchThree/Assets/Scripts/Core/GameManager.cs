@@ -7,7 +7,11 @@ namespace Core
 {
     public class GameManager : SingletonMonoBehaviour<GameManager>
     {
+        [SerializeField] private int _maxAllowedMove = 40;
+        [SerializeField] private TextMeshProUGUI _scoreText;
+        [SerializeField] private TextMeshProUGUI _moveText;
         [SerializeField] private Vector2Int _dimensions;
+        private int _score;
         private MatchableGrid _grid;
         [ContextMenu("ClearAndPopulate")]
         private void ClearAndPopulate()
@@ -38,10 +42,24 @@ namespace Core
             _grid = (MatchableGrid) MatchableGrid.Instance;
             _grid.InitializeGrid(_dimensions);
             _grid.PopulateGrid();
+            _scoreText.text = _score.ToString("D5");
+            _moveText.text = _maxAllowedMove.ToString();
         }
-        private void Start()
+        public void IncreaseScore(int value)
         {
-            
+            _score += value;
+            _scoreText.text = _score.ToString("D5");
+        }
+        public bool CanMoveMatchables()
+        {
+            if (_maxAllowedMove <= 0)
+                return false;
+            return true;
+        }
+        public void DecreaseMove()
+        {
+            _maxAllowedMove--;
+            _moveText.text = _maxAllowedMove.ToString();
         }
     }
 }

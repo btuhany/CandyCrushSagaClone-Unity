@@ -1,7 +1,5 @@
 using Core;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class Match
@@ -18,6 +16,7 @@ public class Match
     private MatchableGrid _grid;
     private MatchablePool _pool;
     private Matchable _originMatchable;
+
     public Match(Matchable matchable)
     {
         _matchableList = new List<Matchable>();
@@ -28,7 +27,10 @@ public class Match
     }
     private void CollectMatchPoint()
     {
-       
+        int addScore = _matchableList.Count * 30; //30 point per matchable
+        GameManager.Instance.IncreaseScore(addScore);
+        ScorePointFX scorePointFX = ScorePointFXPool.Instance.GetObject();
+        scorePointFX.PlayFX(_originMatchable.transform.position, addScore, _originMatchable.Variant.color);
     }
     private bool TryTransform()
     {
@@ -68,6 +70,7 @@ public class Match
         {
             MatchableColor color = _originMatchable.Variant.color;
             _originMatchable.SetVariant(_pool.GetVariant(color, MatchableType.AreaExplode));
+            SoundManager.Instance.PlaySound(12);
         }
         else
         {
@@ -75,6 +78,7 @@ public class Match
             if (_matchableList.Count > 4)
             {
                 _originMatchable.SetVariant(_pool.GetVariant(MatchableColor.None, MatchableType.ColorExplode));
+                SoundManager.Instance.PlaySound(4);
             }
             else
             {
@@ -82,6 +86,7 @@ public class Match
                     _originMatchable.SetVariant(_pool.GetVariant(color, MatchableType.VerticalExplode));
                 else if (minY == maxY)
                     _originMatchable.SetVariant(_pool.GetVariant(color, MatchableType.HorizontalExplode));
+                SoundManager.Instance.PlaySound(8);
             }
             
         }
