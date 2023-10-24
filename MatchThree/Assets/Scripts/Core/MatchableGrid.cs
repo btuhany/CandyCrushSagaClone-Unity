@@ -8,11 +8,11 @@ namespace Core
 {
     public class MatchableGrid : GridSystem<Matchable>
     {
-        [SerializeField] private float _matchableSpawnSpeedFactor = 1f;
-        [SerializeField] private float _collapseSpeedFactor = 1f;
+        [SerializeField] private float _matchableSpawnSpeedFactor = 6f;
+        [SerializeField] private float _collapseSpeedFactor = 4f;
 
         //TODO: Cache WaitForSeconds delays in the Awake Funct.
-        [SerializeField] private float _horizontalVerticalExplodeDelays = 0.4f;
+        [SerializeField] private float _stripedExplodeDelay = 0.02f;
 
         [SerializeField] private float _gridCollapsePopulateScanDelay = 0.1f;
         [SerializeField] private float _scanGridDelay = 0.5f;
@@ -34,18 +34,39 @@ namespace Core
         private List<int> _lockedTriggerColumns = new List<int>();
         public Coroutine[] columnCoroutines;
         private Coroutine _checkGridCoroutine;
-        private WaitForSeconds _scanWaitDelay;
-        private WaitForSeconds _explodeWaitDelay;
-        private WaitForSeconds _collapsePopulateScanWaitDelay;
+
+        private WaitForSeconds _stripedWaitTime;
+        private WaitForSeconds _gridControlWaitTime;
+        private WaitForSeconds _gridScanWaitTime;
+        private WaitForSeconds _gridRepopulateWaitTime;
+        private WaitForSeconds _columnCollapseWaitTime;
+        private WaitForSeconds _columnRepopulateeWaitTime;
+        private WaitForSeconds _columnScanWaitTime;
+        private WaitForSeconds _colorExplodeDelayWaitTime;
+        private WaitForSeconds _colorExplodesWaitTime;
+        private WaitForSeconds _checkWaitTimeForCollapseGrid;
+        private WaitForSeconds _halfSecondWaitTime;
+        private WaitForSeconds _superExplodeWaitTime;
+
         protected override void Awake()
         {
             base.Awake();
             _transform = GetComponent<Transform>();
             _pool = (MatchablePool)MatchablePool.Instance;
             _move = GetComponent<Movable>();
-           // _scanWaitDelay = new WaitForSeconds(_scanDelay);
-           // _explodeWaitDelay = new WaitForSeconds(_explodeDelays);
-           //_collapsePopulateScanWaitDelay = new WaitForSeconds(_gridCollapsePopulateScanDelay);
+
+            _stripedWaitTime = new WaitForSeconds(_stripedExplodeDelay);
+            _gridControlWaitTime = new WaitForSeconds(_gridCollapsePopulateScanDelay);
+            _gridScanWaitTime = new WaitForSeconds(_scanGridDelay);
+            _gridRepopulateWaitTime = new WaitForSeconds(_repopulateGridDelay);
+            _columnCollapseWaitTime = new WaitForSeconds(_columnCollapsePopulateScanDelay);
+            _columnRepopulateeWaitTime = new WaitForSeconds(_repopulateColumnDelay);
+            _columnScanWaitTime = new WaitForSeconds(_scanColumnDelay);
+            _colorExplodeDelayWaitTime = new WaitForSeconds(_colorExplodeStartDelay);
+            _colorExplodesWaitTime = new WaitForSeconds(_colorExplodeDelays);
+            _checkWaitTimeForCollapseGrid = new WaitForSeconds(3f);
+            _halfSecondWaitTime = new WaitForSeconds(0.5f);
+            _superExplodeWaitTime = new WaitForSeconds(0.0005f);
         }
         private void Start()
         {
@@ -278,7 +299,7 @@ namespace Core
         }
         private IEnumerator CollapseRepopulateAndScanTheGrid()
         {
-            yield return new WaitForSeconds(_gridCollapsePopulateScanDelay);
+            yield return _gridControlWaitTime;
             CollapseGrid();
             yield return StartCoroutine(RepopulateGrid());
             yield return StartCoroutine(ScanForMatches());
@@ -301,7 +322,7 @@ namespace Core
                 //Debug.Log("++ " + x + " added to locked list.");
             }
 
-            yield return new WaitForSeconds(_columnCollapsePopulateScanDelay);
+            yield return _columnCollapseWaitTime;
             CollapseColumn(x);
             yield return StartCoroutine(RepopulateColumn(x));
             SoundManager.Instance.PlayRandomInRangeOf(0, 3);
@@ -334,7 +355,7 @@ namespace Core
         }
         public IEnumerator RepopulateGrid(bool allowMatches = false)
         {
-            yield return new WaitForSeconds(_repopulateGridDelay);
+            yield return _gridRepopulateWaitTime;
             Coroutine currentCoroutine = null;
             for (int x = 0; x < Dimensions.x; x++)
             {
@@ -371,7 +392,7 @@ namespace Core
         }
         private IEnumerator RepopulateColumn(int x, bool allowMatches = false)
         {
-            yield return new WaitForSeconds(_repopulateColumnDelay);
+            yield return _columnRepopulateeWaitTime;
             Coroutine currentCoroutine = null;
             int positionOffset = 0;
             List<Matchable> newMatchables = new List<Matchable>();
@@ -407,7 +428,7 @@ namespace Core
         public IEnumerator ScanForMatches()
         {
             bool isResolved = false;
-            yield return new WaitForSeconds(_scanGridDelay);
+            yield return _gridScanWaitTime;
             for (int x = 0; x < Dimensions.x; x++)
             {
                 for (int y = 0; y < Dimensions.y; y++)
@@ -427,7 +448,7 @@ namespace Core
         }
         private IEnumerator ScanColumn(int x)
         {
-            yield return new WaitForSeconds(_scanColumnDelay);
+            yield return _columnScanWaitTime;
             for (int y = 0; y < Dimensions.y; y++)
             {
                 if (!IsEmpty(x, y) && !GetItemAt(x, y).isSwapping && !GetItemAt(x, y).IsMoving)
@@ -443,7 +464,7 @@ namespace Core
         }
         private IEnumerator CheckGridForCollapse()
         {
-            yield return new WaitForSeconds(3f);
+            yield return _checkWaitTimeForCollapseGrid;
             for (int x = 0; x < Dimensions.x; x++)
             {
                 for (int y = 0; y < Dimensions.y; y++)
@@ -496,8 +517,10 @@ namespace Core
             
             if(IsSpecialCombo(matchable1, matchable2))
             {
+                SoundManager.Instance.PlayMatchRemovedClip();
                 SoundManager.Instance.PlaySound(11);
                 _checkGridCoroutine = StartCoroutine(CheckGridForCollapse());
+                GameManager.Instance.DecreaseMove();
                 yield break;
             }
             if(IsPartOfAMatch(matchable1, out Match match1))
@@ -562,7 +585,7 @@ namespace Core
                                     //}
                                     //else
                                     //{
-                                        AddScorePoint(colorExplodeMatchable.transform.position, MatchableColor.Red, 60);
+                                        AddScorePoint(matchableAtPos.transform.position, matchableAtPos.Variant.color, 60);
                                         RemoveItemAt(matchableAtPos.GridPosition);
                                         _pool.ReturnObject(matchableAtPos);
                                     //}
@@ -575,6 +598,7 @@ namespace Core
                     SoundManager.Instance.PlaySound(3);
                     break;
                 case MatchableType.HorizontalExplode:
+                    SoundManager.Instance.PlaySound(3);
                     List<Matchable> horizontalsToTrigger = new List<Matchable>();
                     for (int x = 0; x < Dimensions.x; x++)
                     {
@@ -595,7 +619,7 @@ namespace Core
                             }
                         }
                     }
-                    yield return new WaitForSeconds(0.5f);
+                    yield return _halfSecondWaitTime;
                     foreach (Matchable matchableToTrigger in horizontalsToTrigger)
                     {
                         RemoveItemAt(matchableToTrigger.GridPosition);
@@ -604,6 +628,7 @@ namespace Core
                     }
                     break;
                 case MatchableType.VerticalExplode:
+                    SoundManager.Instance.PlaySound(3);
                     List<Matchable> verticalsToTrigger = new List<Matchable>();
                     for (int x = 0; x < Dimensions.x; x++)
                     {
@@ -624,11 +649,11 @@ namespace Core
                             }
                         }
                     }
-                    yield return new WaitForSeconds(_colorExplodeStartDelay);
+                    yield return _colorExplodeDelayWaitTime;
                     foreach (Matchable matchableToTrigger in verticalsToTrigger)
                     {
                         StartCoroutine(TriggerVerticalExplode(matchableToTrigger, null));
-                        yield return new WaitForSeconds(_colorExplodeDelays);
+                        yield return _colorExplodesWaitTime;
                         //Matchable check for bugs
                         if (!IsEmpty(matchableToTrigger.GridPosition) && GetItemAt(matchableToTrigger.GridPosition) == matchableToTrigger)
                         {
@@ -640,6 +665,7 @@ namespace Core
                     break;
                 case MatchableType.AreaExplode:
                     List<Matchable> areaExplodesToTrigger = new List<Matchable>();
+                    SoundManager.Instance.PlaySound(3);
                     for (int x = 0; x < Dimensions.x; x++)
                     {
                         for (int y = 0; y < Dimensions.y; y++)
@@ -658,15 +684,15 @@ namespace Core
                             }
                         }
                     }
-                    yield return new WaitForSeconds(_colorExplodeStartDelay);
+                    yield return _colorExplodeDelayWaitTime;
                     foreach (Matchable matchableToTrigger in areaExplodesToTrigger)
                     {
                         TriggerAreaExplode(matchableToTrigger, null, true);
                     }
-                    SoundManager.Instance.PlaySound(13);
                     break;
                 case MatchableType.ColorExplode:
                     AddScorePoint(matchable.transform.position, MatchableColor.Red, 5000);
+                    SoundManager.Instance.PlaySound(9);
                     for (int x = 0; x < Dimensions.x; x++)
                     {
                         for (int y = 0; y < Dimensions.y; y++)
@@ -676,13 +702,13 @@ namespace Core
                             ColorExplodeFX fxObj = ColorExplodeFXPool.Instance.GetObject();
                             fxObj.transform.position = matchablePos;
                             fxObj.PlayFX(matchableAtPos.transform.position);
+                            AddScorePoint(matchableAtPos.transform.position, matchableAtPos.Variant.color, 60);
                             RemoveItemAt(matchableAtPos.GridPosition);
                             _pool.ReturnObject(matchableAtPos);
                             columnCoroutines[matchableAtPos.GridPosition.x] = StartCoroutine(CollapseRepopulateAndScanColumn(matchableAtPos.GridPosition.x));
-                            yield return new WaitForSeconds(0.02f);
+                            yield return new WaitForSeconds(0.0005f);
                         }
                     }
-                    SoundManager.Instance.PlaySound(9);
                     break;
                 default:
                     break;
@@ -700,7 +726,7 @@ namespace Core
 
             int y = horizontalMatchable.GridPosition.y;
             int horizontalX = horizontalMatchable.GridPosition.x;
-            yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
+            yield return _stripedWaitTime;
 
             int x2 = horizontalX;
             int x1 = horizontalX;
@@ -774,7 +800,7 @@ namespace Core
                         }
                     }
                 }
-                yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
+                yield return _stripedWaitTime;
             }
 
         }
@@ -815,7 +841,7 @@ namespace Core
                 _pool.ReturnObject(verticalMatchable);
             }
 
-            yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
+            yield return _stripedWaitTime;
 
             while (y2 < Dimensions.y || y1 >= 0)
             {
@@ -875,7 +901,7 @@ namespace Core
                         }
                     }
                 }
-                yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
+                yield return _stripedWaitTime;
                 yield return null;
             }
             if (_lockedColumns.Contains(x))
@@ -887,7 +913,7 @@ namespace Core
         {
             int matchableX = bombMatchable.GridPosition.x;
             int matchableY = bombMatchable.GridPosition.y;
-
+            SoundManager.Instance.PlaySound(13);
             AddScorePoint(bombMatchable.transform.position, bombMatchable.Variant.color, 1000);
 
             for (int x = matchableX - 1; x <= matchableX + 1; x++)
@@ -971,8 +997,8 @@ namespace Core
                 }
             }
 
-            yield return horizontalCoroutine;
-            yield return new WaitForSeconds(0.1f);
+            //yield return horizontalCoroutine;
+            yield return _stripedWaitTime;
 
             for (int x = posX - 1; x <= posX + 1; x++)
             {
@@ -980,6 +1006,7 @@ namespace Core
                 if (CheckBounds(x, posY))
                     StartCoroutine(TriggerVerticalExplode(verticalFx, new Vector2Int(x, posY), null));
             }
+            yield return null;
         }
         private IEnumerator TriggerVerticalExplode(Vector3 fxTransform, Vector2Int pos, Match match, bool removeOrigin = false)
         {
@@ -1017,7 +1044,7 @@ namespace Core
                     _pool.ReturnObject(GetItemAt(pos));
                 }
             }
-            yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
+            yield return _stripedWaitTime;
 
             while (y2 < Dimensions.y || y1 >= 0)
             {
@@ -1027,8 +1054,8 @@ namespace Core
                     Matchable matchable2 = GetItemAt(x, y2);
                     if (match == null || !match.MatchableList.Contains(matchable2))
                     {
-                        if (!matchable2.isSwapping && !matchable2.IsMoving)
-                        {
+                        //if (!matchable2.isSwapping && !matchable2.IsMoving)
+                        //{
                             if (matchable2.Variant.type == MatchableType.AreaExplode)
                             {
                                 TriggerAreaExplode(matchable2, match);
@@ -1045,7 +1072,7 @@ namespace Core
                                 RemoveItemAt(matchable2.GridPosition);
                                 _pool.ReturnObject(matchable2);
                             }
-                        }
+                        //}
                     }
                 }
                 y1--;
@@ -1056,8 +1083,8 @@ namespace Core
                     Matchable matchable = GetItemAt(x, y1);
                     if (match == null || !match.MatchableList.Contains(matchable))
                     {
-                        if (!matchable.isSwapping && !matchable.IsMoving)
-                        {
+                        //if (!matchable.isSwapping && !matchable.IsMoving)
+                        //{
                             if (matchable.Variant.type == MatchableType.AreaExplode)
                             {
                                 TriggerAreaExplode(matchable, match);
@@ -1075,10 +1102,10 @@ namespace Core
                                 RemoveItemAt(matchable.GridPosition);
                                 _pool.ReturnObject(matchable);
                             }
-                        }
+                        //}
                     }
                 }
-                yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
+                yield return _stripedWaitTime;
                 yield return null;
             }
             if (_lockedColumns.Contains(x))
@@ -1093,7 +1120,7 @@ namespace Core
             fxObj.transform.position = fxTransform;
             int y = pos.y;
             int horizontalX = pos.x;
-            yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
+            yield return _stripedWaitTime;
 
             int x2 = horizontalX;
             int x1 = horizontalX;
@@ -1113,8 +1140,8 @@ namespace Core
                     Matchable matchable2 = GetItemAt(x2, y);
                     if (match == null || !match.MatchableList.Contains(matchable2))
                     {
-                        if (!matchable2.isSwapping && !matchable2.IsMoving)
-                        {
+                        //if (!matchable2.isSwapping && !matchable2.IsMoving)
+                        //{
                             if (matchable2.Variant.type == MatchableType.AreaExplode)
                             {
                                 TriggerAreaExplode(matchable2, match, true);
@@ -1134,7 +1161,7 @@ namespace Core
                                 _pool.ReturnObject(matchable2);
                                 columnCoroutines[x2] = StartCoroutine(CollapseRepopulateAndScanColumn(x2));
                             }
-                        }
+                        //}
                     }
                 }
                 //if (!CheckBounds(x, y))
@@ -1145,8 +1172,8 @@ namespace Core
                     Matchable matchable = GetItemAt(x1, y);
                     if (match == null || !match.MatchableList.Contains(matchable))
                     {
-                        if (!matchable.isSwapping && !matchable.IsMoving)
-                        {
+                        //if (!matchable.isSwapping && !matchable.IsMoving)
+                        //{
                             if (matchable.Variant.type == MatchableType.AreaExplode)
                             {
                                 TriggerAreaExplode(matchable, match, true);
@@ -1166,10 +1193,10 @@ namespace Core
                                 _pool.ReturnObject(matchable);
                                 columnCoroutines[x1] = StartCoroutine(CollapseRepopulateAndScanColumn(x1));
                             }
-                        }
+                        //}
                     }
                 }
-                yield return new WaitForSeconds(_horizontalVerticalExplodeDelays);
+                yield return _stripedWaitTime;
             }
 
         }

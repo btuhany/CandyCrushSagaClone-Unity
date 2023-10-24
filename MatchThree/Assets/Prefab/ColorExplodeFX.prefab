@@ -97,14 +97,14 @@ TrailRenderer:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
-        value: 0.12346536
-        inSlope: 0
-        outSlope: 0
+        time: 0.0033111572
+        value: 0.1539982
+        inSlope: 0.26336214
+        outSlope: 0.26336214
         tangentMode: 0
         weightedMode: 0
         inWeight: 0
-        outWeight: 0
+        outWeight: 0.1694353
       - serializedVersion: 3
         time: 1
         value: 0
@@ -152,6 +152,6 @@ TrailRenderer:
     textureMode: 0
     shadowBias: 0.5
     generateLightingData: 0
-  m_MinVertexDistance: 0.1
+  m_MinVertexDistance: 0.5
   m_Autodestruct: 0
   m_Emitting: 1
